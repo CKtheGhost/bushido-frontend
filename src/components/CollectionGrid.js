@@ -13,6 +13,7 @@ const images = [
 const CollectionGrid = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 p-8">
+      {/* Content starts directly without nav since it's handled by Layout */}
       <h1 className="text-4xl text-center text-white font-bold mb-12">
         Explore the Collection
       </h1>

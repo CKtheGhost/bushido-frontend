@@ -1,19 +1,5 @@
-import React from 'react';
-
-const Icons = {
-  ChevronRight: () => (
-    <svg className="w-6 h-6 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  ),
-  Wallet: () => (
-    <svg className="w-6 h-6 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
-      <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
-      <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
-    </svg>
-  ),
-};
+import React, { useRef, useEffect, useState } from 'react';
+import { Volume2, VolumeX, ChevronRight } from 'lucide-react';
 
 const features = [
   {
@@ -39,11 +25,48 @@ const features = [
 ];
 
 const HomePage = () => {
-  const [isVisible, setIsVisible] = React.useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoError, setVideoError] = useState(null);
+  const videoRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsVisible(true);
+    
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      
+      console.log('Video element:', {
+        src: videoRef.current.src,
+        readyState: videoRef.current.readyState,
+        error: videoRef.current.error,
+        networkState: videoRef.current.networkState
+      });
+    }
   }, []);
+
+  const handleLoadedData = () => {
+    console.log('Video loaded successfully');
+    setIsVideoLoaded(true);
+    
+    videoRef.current?.play().catch(err => {
+      console.error('Auto-play failed:', err);
+    });
+  };
+
+  const handleVideoError = (e) => {
+    console.error('Video error:', e);
+    setVideoError(e.target.error);
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const newMutedState = !videoRef.current.muted;
+      videoRef.current.muted = newMutedState;
+      setIsMuted(newMutedState);
+    }
+  };
 
   const handleExploreCollection = () => {
     window.location.href = '/collection';
@@ -57,17 +80,58 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white relative overflow-hidden">
-      {/* Video Background with Audio */}
-      <video 
-        className="absolute inset-0 w-full h-full object-cover opacity-60" 
-        src="/videos/Bushido_Story_004.mp4" 
-        type="video/mp4" 
-        autoPlay 
-        loop 
-        muted={false}
-        controls={false} 
-        playsInline
-      />
+      {/* Video Background with Debug Info */}
+      <div className="absolute inset-0">
+        <video 
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover opacity-60" 
+          playsInline
+          loop
+          muted={isMuted}
+          onLoadedData={handleLoadedData}
+          onError={handleVideoError}
+        >
+          <source src="/videos/Bushido_Story_004.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
+        {/* Loading State */}
+        {!isVideoLoaded && !videoError && (
+          <div className="absolute inset-0 bg-black flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p>Loading video...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {videoError && (
+          <div className="absolute inset-0 bg-black flex items-center justify-center">
+            <div className="text-red-500 text-center p-4">
+              <p className="text-xl mb-2">Video failed to load</p>
+              <p className="text-sm mb-4">Error: {videoError.message}</p>
+              <p className="text-sm mb-4">
+                Debug info: Make sure video exists at: /videos/Bushido_Story_004.mp4
+              </p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-500 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mute Toggle Button */}
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all z-10"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      </div>
 
       {/* Dark Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black opacity-80" />
@@ -80,20 +144,6 @@ const HomePage = () => {
           backgroundSize: '40px 40px'
         }} 
       />
-
-      {/* Header with Logo and Wallet Button */}
-      <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur-sm border-b border-red-900/20">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-4xl font-extrabold tracking-wider text-red-500">BUSHIDO</h1>
-          <button 
-            className="bg-red-700 hover:bg-red-600 text-white px-6 py-3 rounded-xl group border border-red-700/50 flex items-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-red-900"
-            onClick={handleExploreCollection}
-          >
-            Connect Wallet 
-            <Icons.Wallet />
-          </button>
-        </div>
-      </nav>
 
       {/* Main Content Section */}
       <section className="h-screen flex flex-col items-center justify-center text-white px-4 relative">
@@ -115,13 +165,11 @@ const HomePage = () => {
             and community-driven narratives.
           </p>
           <button 
-            className="bg-red-700 hover:bg-red-600 text-white text-xl px-10 py-5 group border border-red-700/50 rounded-xl flex items-center transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-2xl hover:shadow-red-900 mx-auto"
+            className="bg-red-700 hover:bg-red-600 text-white text-xl px-10 py-5 group border border-red-700/50 rounded-xl flex items-center gap-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-2xl hover:shadow-red-900 mx-auto"
             onClick={handleExploreCollection}
           >
             Explore Collection 
-            <span className="ml-2">
-              <Icons.ChevronRight />
-            </span>
+            <ChevronRight className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </section>
@@ -144,9 +192,9 @@ const HomePage = () => {
                 <div className="w-12 h-1 bg-red-500 mb-6 transition-all group-hover:w-16" />
                 <p className="text-gray-400 text-lg">{feature.description}</p>
                 {feature.route && (
-                  <div className="mt-4 flex items-center text-red-500">
-                    <span className="mr-2">Learn more</span>
-                    <Icons.ChevronRight />
+                  <div className="mt-4 flex items-center text-red-500 gap-2">
+                    <span>Learn more</span>
+                    <ChevronRight className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 )}
               </div>

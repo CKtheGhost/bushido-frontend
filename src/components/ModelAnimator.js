@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Play, Pause, RotateCw, Camera } from 'lucide-react';
 
-export const ModelAnimator = () => {
+const ModelAnimator = () => {
   const [selectedTraits, setSelectedTraits] = useState({
     armor: 'default',
     weapon: 'katana',
@@ -45,7 +45,6 @@ export const ModelAnimator = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">
-      {/* Header */}
       <header className="bg-black/50 backdrop-blur-sm border-b border-red-900/20 p-6">
         <h1 className="text-4xl font-bold text-red-500 text-center">
           Samurai Customizer

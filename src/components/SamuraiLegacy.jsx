@@ -58,13 +58,6 @@ const SamuraiLegacy = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white">
-      {/* Header */}
-      <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur-sm border-b border-red-900/20">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-4xl font-extrabold tracking-wider text-red-500">BUSHIDO</h1>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative py-24">
         <div className="container mx-auto px-4">

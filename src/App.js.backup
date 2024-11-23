@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Layout from './components/Layout';
-import LoadingTransition from './components/LoadingTransition';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
 import HomePage from './components/HomePage';
 import CollectionGrid from './components/CollectionGrid';
 import ModelAnimator from './components/ModelAnimator';
@@ -11,24 +8,26 @@ import CommunityGovernance from './components/CommunityGovernance';
 import AnimatedSeries from './components/AnimatedSeries';
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('/');
-  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = React.useState('/');
 
-  useEffect(() => {
+  React.useEffect(() => {
+    // Listen to path changes
     const handleLocation = () => {
-      setIsLoading(true);
       setCurrentPage(window.location.pathname);
-      setTimeout(() => setIsLoading(false), 500);
     };
-
+    
     window.addEventListener('popstate', handleLocation);
+    
+    // Handle initial page load
     handleLocation();
 
+    // Cleanup event listener
     return () => {
       window.removeEventListener('popstate', handleLocation);
     };
   }, []);
 
+  // Route-based page rendering
   const renderPage = () => {
     switch (currentPage) {
       case '/collection':
@@ -46,16 +45,11 @@ const App = () => {
     }
   };
 
+  // Wrap the rendered page with Layout component
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <LoadingTransition isLoading={isLoading}>
-          <Layout>
-            {renderPage()}
-          </Layout>
-        </LoadingTransition>
-      </LanguageProvider>
-    </ThemeProvider>
+    <Layout>
+      {renderPage()}
+    </Layout>
   );
 };
 

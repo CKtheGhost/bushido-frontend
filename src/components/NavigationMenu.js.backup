@@ -1,0 +1,56 @@
+import React, { useState } from 'react';
+import { Menu, ChevronDown } from 'lucide-react';
+
+const NavigationMenu = ({ currentPath }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const menuItems = [
+    { title: 'Home', path: '/' },
+    { title: 'Collection', path: '/collection' },
+    { title: 'Samurai Legacy', path: '/samurai-legacy' },
+    { title: 'Community', path: '/community' },
+    { title: 'Animator', path: '/animator' },
+    { title: 'Animated Series', path: '/animated-series' }
+  ];
+
+  const handleNavigate = (path) => {
+    window.location.href = path;
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition-all duration-300"
+      >
+        <Menu size={20} />
+        <span>Menu</span>
+        <ChevronDown
+          size={16}
+          className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-2 w-48 bg-neutral-900 border border-red-900/20 rounded-lg shadow-lg overflow-hidden z-50">
+          {menuItems.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => handleNavigate(item.path)}
+              className={`w-full px-4 py-3 text-left transition-colors ${
+                currentPath === item.path
+                  ? 'bg-red-900/40 text-red-400'
+                  : 'text-white hover:bg-red-900/20'
+              }`}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default NavigationMenu;
