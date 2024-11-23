@@ -1,25 +1,50 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import HomePage from './components/HomePage';
+import CollectionGrid from './components/CollectionGrid';
+import ModelAnimator from './components/ModelAnimator';
+import SamuraiLegacy from './components/SamuraiLegacy';
+import CommunityGovernance from './components/CommunityGovernance';
+import AnimatedSeries from './components/AnimatedSeries';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App = () => {
+  const [currentPage, setCurrentPage] = React.useState('/');
+
+  React.useEffect(() => {
+    // Listen to path changes
+    const handleLocation = () => {
+      setCurrentPage(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocation);
+    
+    // Handle initial page load
+    handleLocation();
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('popstate', handleLocation);
+    };
+  }, []);
+
+  // Route-based page rendering
+  const renderPage = () => {
+    switch (currentPage) {
+      case '/collection':
+        return <CollectionGrid />;
+      case '/animator':
+        return <ModelAnimator />;
+      case '/samurai-legacy':
+        return <SamuraiLegacy />;
+      case '/community':
+        return <CommunityGovernance />;
+      case '/animated-series':
+        return <AnimatedSeries />;
+      default:
+        return <HomePage />;
+    }
+  };
+
+  return renderPage();
+};
 
 export default App;
