@@ -1,63 +1,74 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Volume2, VolumeX, ChevronRight } from 'lucide-react';
-
-const features = [
-  {
-    title: "Samurai Legacy",
-    description: "Immerse yourself in the rich tradition of the Bushido code through unique 3D NFTs",
-    route: '/samurai-legacy'
-  },
-  {
-    title: "Community Driven",
-    description: "Shape the narrative through voting and collaborative storytelling",
-    route: '/community'
-  },
-  {
-    title: "Customizable 3D Art",
-    description: "Create and customize your own unique Samurai warrior",
-    route: '/animator'
-  },
-  {
-    title: "Animated Series",
-    description: "Experience your NFTs come to life in our upcoming animated series",
-    route: '/animated-series'
-  }
-];
+import React, { useRef, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, VolumeX, ChevronRight, Sword, Users, Play, Code, X } from 'lucide-react';
 
 const HomePage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(null);
+  const [activeFeature, setActiveFeature] = useState(null);
+  const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(true);
   const videoRef = useRef(null);
 
-  useEffect(() => {
+  const features = [
+    {
+      icon: <Sword className="w-10 h-10" />,
+      title: "Samurai Legacy",
+      description: "Immerse yourself in the rich tradition of the Bushido code through unique 3D NFTs",
+      route: '/samurai-legacy',
+      color: "from-red-500/20 to-transparent"
+    },
+    {
+      icon: <Users className="w-10 h-10" />,
+      title: "Community Driven",
+      description: "Shape the narrative through voting and collaborative storytelling",
+      route: '/community',
+      color: "from-blue-500/20 to-transparent"
+    },
+    {
+      icon: <Code className="w-10 h-10" />,
+      title: "Customizable 3D Art",
+      description: "Create and customize your own unique Samurai warrior",
+      route: '/animator',
+      color: "from-green-500/20 to-transparent"
+    },
+    {
+      icon: <Play className="w-10 h-10" />,
+      title: "Animated Series",
+      description: "Experience your NFTs come to life in our upcoming animated series",
+      route: '/animated-series',
+      color: "from-purple-500/20 to-transparent"
+    }
+  ];
+
+    useEffect(() => {
     setIsVisible(true);
     
+    // Try to play with sound immediately (will likely be blocked by browser)
     if (videoRef.current) {
-      videoRef.current.muted = true;
-      
-      console.log('Video element:', {
-        src: videoRef.current.src,
-        readyState: videoRef.current.readyState,
-        error: videoRef.current.error,
-        networkState: videoRef.current.networkState
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {
+        // If autoplay with sound fails, mute and try again
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          setIsMuted(true);
+          videoRef.current.play();
+        }
       });
     }
   }, []);
 
   const handleLoadedData = () => {
-    console.log('Video loaded successfully');
     setIsVideoLoaded(true);
-    
-    videoRef.current?.play().catch(err => {
-      console.error('Auto-play failed:', err);
-    });
   };
 
-  const handleVideoError = (e) => {
-    console.error('Video error:', e);
-    setVideoError(e.target.error);
+  const enableSound = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      setIsMuted(false);
+      setShowAutoplayPrompt(false);
+    }
   };
 
   const toggleMute = () => {
@@ -68,156 +79,152 @@ const HomePage = () => {
     }
   };
 
-  const handleExploreCollection = () => {
-    window.location.href = '/collection';
-  };
-
   const handleNavigate = (route) => {
-    if (route) {
-      window.location.href = route;
-    }
+    if (route) window.location.href = route;
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white relative overflow-hidden">
-      {/* Video Background with Debug Info */}
-      <div className="absolute inset-0">
-        <video 
+    return (
+    <div className="relative min-h-screen overflow-hidden bg-black">
+      {/* Video Background */}
+      <div className="absolute inset-0 z-0">
+        <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover opacity-60" 
+          className="absolute inset-0 w-full h-full object-cover"
           playsInline
           loop
           muted={isMuted}
           onLoadedData={handleLoadedData}
-          onError={handleVideoError}
+          onError={(e) => setVideoError(e)}
         >
           <source src="/videos/Bushido_Story_004.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
         </video>
-
-        {/* Loading State */}
-        {!isVideoLoaded && !videoError && (
-          <div className="absolute inset-0 bg-black flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-              <p>Loading video...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {videoError && (
-          <div className="absolute inset-0 bg-black flex items-center justify-center">
-            <div className="text-red-500 text-center p-4">
-              <p className="text-xl mb-2">Video failed to load</p>
-              <p className="text-sm mb-4">Error: {videoError.message}</p>
-              <p className="text-sm mb-4">
-                Debug info: Make sure video exists at: /videos/Bushido_Story_004.mp4
-              </p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-500 transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Mute Toggle Button */}
-        <button
-          onClick={toggleMute}
-          className="absolute bottom-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all z-10"
-        >
-          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
+        <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Dark Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black opacity-80" />
-
-      {/* Fixed Background Pattern */}
-      <div 
-        className="fixed inset-0 bg-repeat opacity-5 pointer-events-none" 
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 20L20 0L40 20L20 20L20 40L20 20Z' fill='white'/%3E%3C/svg%3E")`,
-          backgroundSize: '40px 40px'
-        }} 
-      />
-
-      {/* Main Content Section */}
-      <section className="h-screen flex flex-col items-center justify-center text-white px-4 relative">
-        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-          <div className="w-96 h-96 bg-red-800 rounded-full blur-3xl" />
-        </div>
-
-        <div 
-          className={`relative text-center transition-all duration-1000 transform ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-          }`}
-        >
-          <h1 className="text-8xl font-extrabold mb-6 tracking-widest drop-shadow-lg">
-            BUSHIDO
-          </h1>
-          <div className="w-32 h-1 bg-red-500 mx-auto mb-8" />
-          <p className="text-2xl mb-12 max-w-2xl mx-auto text-gray-300 font-light">
-            Join us in shaping the future of interactive storytelling through unique 3D NFTs 
-            and community-driven narratives.
-          </p>
-          <button 
-            className="bg-red-700 hover:bg-red-600 text-white text-xl px-10 py-5 group border border-red-700/50 rounded-xl flex items-center gap-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-2xl hover:shadow-red-900 mx-auto"
-            onClick={handleExploreCollection}
+      {/* Autoplay Prompt */}
+      <AnimatePresence>
+        {showAutoplayPrompt && isVideoLoaded && isMuted && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50"
           >
-            Explore Collection 
-            <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-24 relative bg-gradient-to-b from-black to-neutral-800">
-        <div className="container mx-auto px-4 relative">
-          <h2 className="text-5xl font-bold text-white mb-8 text-center drop-shadow-lg">Features</h2>
-          <div className="w-20 h-1 bg-red-500 mx-auto mb-16" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-            {features.map((feature, index) => (
-              <div 
-                key={index} 
-                onClick={() => handleNavigate(feature.route)}
-                className={`bg-neutral-900 border border-red-900 group hover:border-red-500 transition-all duration-300 p-8 rounded-2xl shadow-lg hover:shadow-red-900 ${
-                  feature.route ? 'cursor-pointer' : ''
-                }`}
-              >
-                <h3 className="text-2xl font-bold mb-4 text-white">{feature.title}</h3>
-                <div className="w-12 h-1 bg-red-500 mb-6 transition-all group-hover:w-16" />
-                <p className="text-gray-400 text-lg">{feature.description}</p>
-                {feature.route && (
-                  <div className="mt-4 flex items-center text-red-500 gap-2">
-                    <span>Learn more</span>
-                    <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                )}
+            <div className="bg-black/90 backdrop-blur-sm border border-red-500/20 rounded-xl p-4 shadow-xl flex items-center gap-4">
+              <div className="text-white text-sm">
+                <p>Enable sound for full experience?</p>
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={enableSound}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm transition-colors"
+                >
+                  Enable
+                </button>
+                <button
+                  onClick={() => setShowAutoplayPrompt(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+       {/* Loading State */}
+      {!isVideoLoaded && !videoError && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
+          <div className="text-white text-center">
+            <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-lg">Loading experience...</p>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Footer */}
-      <footer className="relative z-10 bg-black py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 text-white">
-            <div>
-              <h3 className="text-3xl font-bold mb-6 text-red-500">BUSHIDO</h3>
-              <div className="w-10 h-1 bg-red-500 mb-6" />
-              <p className="text-gray-400 text-lg">Where Art, Community, and Innovation Collide.</p>
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Hero Section - Reduced height */}
+        <section className="flex-shrink-0 h-[45vh] flex items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <h1 className="text-7xl font-extrabold mb-4 text-white tracking-wider">
+              BUSHIDO
+            </h1>
+            <div className="w-32 h-1 bg-red-500 mx-auto mb-6" />
+            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+              Join us in shaping the future of interactive storytelling through unique 3D NFTs 
+              and community-driven narratives.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-red-700 hover:bg-red-600 text-white text-xl px-10 py-4 rounded-xl flex items-center gap-2 mx-auto group transition-all duration-300"
+              onClick={() => handleNavigate('/collection')}
+            >
+              Explore Collection
+              <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </motion.div>
+        </section>
+
+        {/* Features Section - Expanded proportionally */}
+        <section className="flex-grow flex items-center py-12 relative">
+          <div className="container mx-auto px-4">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl font-bold text-white text-center mb-12"
+            >
+              Features
+            </motion.h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.02 }}
+                  onHoverStart={() => setActiveFeature(index)}
+                  onHoverEnd={() => setActiveFeature(null)}
+                  onClick={() => handleNavigate(feature.route)}
+                  className="relative bg-neutral-900/50 border border-red-900/20 p-8 rounded-2xl cursor-pointer group h-full"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-4 bg-red-900/20 rounded-lg text-red-500">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-2xl font-bold text-white">{feature.title}</h3>
+                    </div>
+                    <p className="text-gray-400 text-lg flex-grow">{feature.description}</p>
+                    <div className="flex items-center gap-2 text-red-500 mt-6 group-hover:translate-x-2 transition-transform">
+                      <span>Learn more</span>
+                      <ChevronRight className="w-5 h-5" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-red-900/20 text-center text-gray-400">
-            <p>&copy; 2024 Bushido. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+        </section>
+      </div>
+
+       {/* Video Controls */}
+      <button
+        onClick={toggleMute}
+        className="fixed bottom-4 right-4 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all z-20"
+      >
+        {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+      </button>
     </div>
   );
 };
