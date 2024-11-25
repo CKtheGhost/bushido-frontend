@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// Part 1: Imports and Component Setup
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Scroll, 
@@ -17,15 +18,18 @@ import {
   Check,
   Lightbulb,
   RotateCw,
-  Book
+  Book,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
+// Part 2: Virtue Card Component
 const BushidoVirtue = ({ title, description, icon: Icon, kanji, index }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: index * 0.1 }}
-    className="bg-neutral-900 border border-red-900/20 p-8 rounded-2xl hover:border-red-500 transition-all duration-300 relative overflow-hidden group"
+    className="backdrop-blur-sm bg-neutral-900/80 border border-red-900/20 p-8 rounded-2xl hover:border-red-500 transition-all duration-300 relative overflow-hidden group"
   >
     <div className="absolute top-0 right-0 p-4 text-6xl font-bold text-red-500/10 transition-all duration-300 group-hover:text-red-500/20">
       {kanji}
@@ -38,7 +42,7 @@ const BushidoVirtue = ({ title, description, icon: Icon, kanji, index }) => (
       <h3 className="text-2xl font-bold text-white">{title}</h3>
     </div>
     
-    <p className="text-gray-400 text-lg leading-relaxed relative z-10">{description}</p>
+    <p className="text-gray-300 text-lg leading-relaxed relative z-10">{description}</p>
     
     <motion.div 
       className="absolute inset-0 bg-red-500/5"
@@ -49,6 +53,7 @@ const BushidoVirtue = ({ title, description, icon: Icon, kanji, index }) => (
   </motion.div>
 );
 
+// Part 3: Timeline Event Component
 const TimelineEvent = ({ year, title, description, index }) => (
   <motion.div 
     initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
@@ -65,6 +70,7 @@ const TimelineEvent = ({ year, title, description, index }) => (
   </motion.div>
 );
 
+// Part 4: Interactive Quote Component
 const InteractiveQuote = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const quotes = [
@@ -120,6 +126,7 @@ const InteractiveQuote = () => {
   );
 };
 
+// Part 5: Knowledge Test Component
 const KnowledgeTest = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
@@ -233,7 +240,23 @@ const KnowledgeTest = () => {
   );
 };
 
+// Part 6: Main Component State and Data
 const SamuraiLegacy = () => {
+  const [isMuted, setIsMuted] = useState(true);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const videoRef = useRef(null);
+
+  const handleLoadedData = () => {
+    setIsVideoLoaded(true);
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   const virtues = [
     {
       title: "Righteousness (義, Gi)",
@@ -313,144 +336,188 @@ const SamuraiLegacy = () => {
     }
   ];
 
+ // Part 7: JSX Structure and Render Logic
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white">
-      {/* Hero Section */}
-      <section className="relative py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black" />
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 opacity-5">
-            <div className="h-full w-full bg-[linear-gradient(45deg,currentColor_1px,transparent_1px),linear-gradient(-45deg,currentColor_1px,transparent_1px)]" style={{ backgroundSize: '30px 30px' }} />
-          </div>
-        </div>
-        
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h1 className="text-7xl font-bold mb-6">武士道</h1>
-              <h2 className="text-4xl font-bold mb-6">The Way of the Warrior</h2>
-              <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
-              <p className="text-xl text-gray-400 leading-relaxed">
-                Discover the ancient code of the samurai, where honor meets destiny. 
-                Through our NFT collection, we breathe new life into these timeless principles, 
-                creating digital artifacts that embody the spirit of Bushido.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Virtues Grid */}
-      <section className="py-24 relative">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
+      {/* Combined Video Background Section */}
+      <div className="relative">
+        {/* Video Background - Wraps hero and virtues sections */}
+        <div className="fixed inset-0 z-0">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            playsInline
+            autoPlay
+            loop
+            muted={isMuted}
+            onLoadedData={handleLoadedData}
           >
-            <h2 className="text-4xl font-bold">The Eight Virtues of Bushido</h2>
-            <div className="w-24 h-1 bg-red-500 mx-auto mt-6" />
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {virtues.map((virtue, index) => (
-              <BushidoVirtue key={index} {...virtue} index={index} />
-            ))}
-          </div>
+            <source src="/videos/Weapons (1).mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/75 to-black" />
         </div>
-      </section>
 
-      {/* Timeline Section */}
-      <section className="py-24 bg-neutral-900/30">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="flex items-center gap-4 mb-12">
-              <div className="p-3 bg-red-900/20 rounded-lg">
-                <Scroll className="w-6 h-6 text-red-500" />
-              </div>
-              <h2 className="text-4xl font-bold">Historical Timeline</h2>
+        {/* Loading State */}
+        {!isVideoLoaded && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+            <div className="text-white text-center">
+              <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-lg">Loading experience...</p>
             </div>
+          </div>
+        )}
+
+        {/* Video Controls */}
+        <button
+          onClick={toggleMute}
+          className="fixed bottom-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all"
+        >
+          {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+        </button>
+
+        {/* Hero Section */}
+        <section className="relative py-24">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/50 to-black/50 z-10" />
+          <div className="absolute inset-0 z-10">
+            <div className="absolute inset-0 opacity-5">
+              <div 
+                className="h-full w-full bg-[linear-gradient(45deg,currentColor_1px,transparent_1px),linear-gradient(-45deg,currentColor_1px,transparent_1px)]" 
+                style={{ backgroundSize: '30px 30px' }} 
+              />
+            </div>
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-20">
+            <div className="max-w-3xl mx-auto text-center">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h1 className="text-7xl font-bold mb-6">武士道</h1>
+                <h2 className="text-4xl font-bold mb-6">The Way of the Warrior</h2>
+                <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
+                <p className="text-xl text-gray-300 leading-relaxed">
+                  Discover the ancient code of the samurai, where honor meets destiny. 
+                  Through our NFT collection, we breathe new life into these timeless principles, 
+                  creating digital artifacts that embody the spirit of Bushido.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Virtues Grid */}
+        <section className="relative py-24">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black z-10" />
+          <div className="container mx-auto px-4 relative z-20">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold">The Eight Virtues of Bushido</h2>
+              <div className="w-24 h-1 bg-red-500 mx-auto mt-6" />
+            </motion.div>
             
-            <div className="space-y-12">
-              {timeline.map((event, index) => (
-                <TimelineEvent key={index} {...event} index={index} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {virtues.map((virtue, index) => (
+                <BushidoVirtue key={index} {...virtue} index={index} />
               ))}
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
 
-      {/* Interactive Learning Section */}
-      <section className="py-24 bg-neutral-900/30">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="flex items-center gap-4 mb-12">
-              <div className="p-3 bg-red-900/20 rounded-lg">
-                <Lightbulb className="w-6 h-6 text-red-500" />
+      {/* Timeline Section - Marks end of video background */}
+      <div className="relative bg-black">
+        <section className="py-24 bg-neutral-900/30">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center gap-4 mb-12">
+                <div className="p-3 bg-red-900/20 rounded-lg">
+                  <Scroll className="w-6 h-6 text-red-500" />
+                </div>
+                <h2 className="text-4xl font-bold">Historical Timeline</h2>
               </div>
-              <h2 className="text-4xl font-bold">Interactive Learning</h2>
-            </div>
+              
+              <div className="space-y-12">
+                {timeline.map((event, index) => (
+                  <TimelineEvent key={index} {...event} index={index} />
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
-            <div className="grid grid-cols-1 gap-8">
-              <InteractiveQuote />
-              <KnowledgeTest />
-            </div>
-          </motion.div>
-        </div>
-      </section>
+        {/* Interactive Learning Section */}
+        <section className="py-24 bg-neutral-900/30">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center gap-4 mb-12">
+                <div className="p-3 bg-red-900/20 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-red-500" />
+                </div>
+                <h2 className="text-4xl font-bold">Interactive Learning</h2>
+              </div>
 
-      {/* Call to Action */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="bg-gradient-to-r from-red-900/20 to-black border border-red-900/20 rounded-3xl p-12 text-center max-w-4xl mx-auto"
-          >
-            <h2 className="text-4xl font-bold mb-6">Begin Your Journey</h2>
-            <p className="text-xl text-gray-400 mb-8">
-              Join our community and become part of a new generation of digital warriors, 
-              where ancient wisdom meets blockchain innovation.
-            </p>
-            <div className="flex justify-center gap-4">
-              <button 
-                onClick={() => window.location.href = '/collection'}
-                className="bg-red-700 hover:bg-red-600 text-white px-8 py-4 rounded-xl flex items-center gap-2 transition-all duration-300"
-              >
-                Explore Collection
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => window.location.href = '/animated-series'}
-                className="bg-neutral-800 hover:bg-neutral-700 text-white px-8 py-4 rounded-xl flex items-center gap-2 transition-all duration-300"
-              >
-                Watch Series
-                <Play className="w-5 h-5" />
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+              <div className="grid grid-cols-1 gap-8">
+                <InteractiveQuote />
+                <KnowledgeTest />
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className="py-24">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="bg-gradient-to-r from-red-900/20 to-black border border-red-900/20 rounded-3xl p-12 text-center max-w-4xl mx-auto"
+            >
+              <h2 className="text-4xl font-bold mb-6">Begin Your Journey</h2>
+              <p className="text-xl text-gray-400 mb-8">
+                Join our community and become part of a new generation of digital warriors, 
+                where ancient wisdom meets blockchain innovation.
+              </p>
+              <div className="flex justify-center gap-4">
+                <button 
+                  onClick={() => window.location.href = '/collection'}
+                  className="bg-red-700 hover:bg-red-600 text-white px-8 py-4 rounded-xl flex items-center gap-2 transition-all duration-300"
+                >
+                  Explore Collection
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => window.location.href = '/animated-series'}
+                  className="bg-neutral-800 hover:bg-neutral-700 text-white px-8 py-4 rounded-xl flex items-center gap-2 transition-all duration-300"
+                >
+                  Watch Series
+                  <Play className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

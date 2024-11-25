@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Scroll, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, VolumeX, Scroll, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import NFTDetailsModal from './NFTDetailsModal';
@@ -30,7 +30,7 @@ const generateBio = (id, traits) => {
   };
 };
 
-// Enhanced images data
+// Sample NFT data
 const enhancedImages = [
   { id: 1, src: "/images/collection/685.jpg", alt: {
     en: "Noble Warrior #685",
@@ -77,42 +77,60 @@ const enhancedImages = [
   };
 });
 
-const LoreSection = () => {
+const VideoBackground = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(true);
   const [isVideoError, setIsVideoError] = useState(false);
   const videoRef = useRef(null);
-  
-  // Updated video initialization
+
   useEffect(() => {
+    const videoElement = videoRef.current;
     let mounted = true;
 
     const initVideo = async () => {
-      if (videoRef.current) {
-        try {
-          videoRef.current.muted = true;
-          setIsMuted(true);
-          
-          // Wait for the video to be loaded
-          if (videoRef.current.readyState >= 3) {
-            await videoRef.current.play();
-          } else {
-            videoRef.current.addEventListener('loadeddata', async () => {
-              if (mounted && videoRef.current) {
-                try {
-                  await videoRef.current.play();
-                } catch (err) {
-                  console.log('Video playback error:', err);
-                  setIsVideoError(true);
-                }
-              }
-            });
+      if (!videoElement || !mounted) return;
+
+      try {
+        // Reset video state
+        videoElement.pause();
+        videoElement.currentTime = 0;
+        videoElement.muted = true;
+        
+        // Set attributes
+        videoElement.setAttribute('playsinline', '');
+        videoElement.setAttribute('preload', 'auto');
+        videoElement.setAttribute('loop', '');
+
+        // Set source
+        const videoPath = `${process.env.PUBLIC_URL}/videos/GM-Pixel-01.mp4`;
+        console.log('Loading video from:', videoPath);
+        videoElement.src = videoPath;
+
+        // Wait for metadata to load
+        await new Promise((resolve, reject) => {
+          videoElement.addEventListener('loadedmetadata', resolve, { once: true });
+          videoElement.addEventListener('error', reject, { once: true });
+        });
+
+        if (!mounted) return;
+
+        // Try to play
+        await videoElement.play();
+        console.log('Video playing successfully');
+        setIsVideoLoaded(true);
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Video initialization error:', {
+          error,
+          videoState: {
+            readyState: videoElement.readyState,
+            networkState: videoElement.networkState,
+            error: videoElement.error,
+            src: videoElement.src
           }
-        } catch (err) {
-          console.log('Video initialization error:', err);
-          setIsVideoError(true);
-        }
+        });
+        setIsVideoError(true);
       }
     };
 
@@ -120,197 +138,253 @@ const LoreSection = () => {
 
     return () => {
       mounted = false;
-      if (videoRef.current) {
-        videoRef.current.pause();
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.removeAttribute('src');
+        videoElement.load();
       }
     };
   }, []);
 
   const handleLoadedData = () => {
+    console.log('Video loaded successfully');
     setIsVideoLoaded(true);
   };
 
-  const enableSound = async () => {
-    if (videoRef.current) {
-      try {
-        videoRef.current.muted = false;
-        await videoRef.current.play();
-        setIsMuted(false);
-        setShowAutoplayPrompt(false);
-      } catch (err) {
-        console.log('Enable sound error:', err);
-        videoRef.current.muted = true;
-        setIsMuted(true);
-      }
-    }
-  };
-
-  const toggleMute = async () => {
-    if (videoRef.current) {
-      try {
-        const newMutedState = !videoRef.current.muted;
-        videoRef.current.muted = newMutedState;
-        if (!newMutedState) {
-          await videoRef.current.play();
-        }
-        setIsMuted(newMutedState);
-      } catch (err) {
-        console.log('Toggle mute error:', err);
-        videoRef.current.muted = true;
-        setIsMuted(true);
-      }
-    }
+  const handleVideoError = (error) => {
+    console.error('Video loading error:', {
+      error,
+      videoError: videoRef.current?.error
+    });
+    setIsVideoError(true);
   };
 
   return (
-    <div className="relative bg-black text-white">
-      {/* Video Background */}
+    <>
       <div className="absolute inset-0 z-0">
-        {!isVideoError ? (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
-            playsInline
-            loop
-            muted={isMuted}
-            onLoadedData={handleLoadedData}
-            onError={() => setIsVideoError(true)}
-          >
-            <source src="/videos/collection-preview.mp4" type="video/mp4" />
-          </video>
-        ) : (
-          // Fallback background if video fails
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-gray-900" />
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          playsInline
+          loop
+          muted={isMuted}
+          onLoadedData={handleLoadedData}
+          onError={handleVideoError}
+          preload="auto"
+          autoPlay
+        >
+          <source 
+            src={`${process.env.PUBLIC_URL}/videos/GM-Pixel-01.mp4`}
+            type="video/mp4"
+          />
+        </video>
+
+        {/* Loading State */}
+        {!isVideoLoaded && !isVideoError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="text-white text-center">
+              <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-lg">Loading video...</p>
+            </div>
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black" />
+        
+        {/* Error State */}
+        {isVideoError && (
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-gray-900 flex items-center justify-center">
+            <p className="text-red-500 text-lg">Failed to load video</p>
+          </div>
+        )}
+        
+        {/* Video Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/20 pointer-events-none" />
       </div>
 
-      {/* Video Controls - Only show if video is loaded and no error */}
+      {/* Video Controls */}
       {!isVideoError && isVideoLoaded && (
         <button
-          onClick={toggleMute}
-          className="fixed top-28 right-4 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all z-50"
+          onClick={() => {
+            if (videoRef.current) {
+              const newMutedState = !videoRef.current.muted;
+              videoRef.current.muted = newMutedState;
+              setIsMuted(newMutedState);
+            }
+          }}
+          className="fixed top-28 right-4 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all z-50 backdrop-blur-sm"
+          aria-label={isMuted ? "Unmute" : "Mute"}
         >
-          {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          {isMuted ? (
+            <VolumeX size={24} className="opacity-75 hover:opacity-100" />
+          ) : (
+            <Volume2 size={24} className="opacity-75 hover:opacity-100" />
+          )}
         </button>
       )}
-
-      {/* Autoplay Prompt - Only show if video is loaded and no error */}
-      <AnimatePresence>
-        {!isVideoError && showAutoplayPrompt && isVideoLoaded && isMuted && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed top-28 left-1/2 transform -translate-x-1/2 z-50"
-          >
-            <div className="bg-black/90 backdrop-blur-sm border border-red-500/20 rounded-xl p-4 shadow-xl flex items-center gap-4">
-              <p className="text-white text-sm">Enable sound for full experience?</p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={enableSound}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm transition-colors"
-                >
-                  Enable
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Content */}
-      <div className="relative z-10">
-        <div className="relative container mx-auto px-4 py-24">
-          {/* Header */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto mb-20"
-          >
-            <div className="inline-block p-2 bg-red-900/20 rounded-lg mb-6">
-              <Scroll className="w-8 h-8 text-red-500" />
-            </div>
-            <h1 className="text-5xl font-bold mb-6">The Samurai Legacy</h1>
-            <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
-            <p className="text-xl text-gray-300 leading-relaxed mb-8">
-              To reclaim serenity from despair, we unite with celestial gifts, forging a legacy 
-              of honor, justice, and unwavering spirit against tyranny's dark tide.
-            </p>
-            <p className="text-xl text-gray-300 leading-relaxed">
-              In the aftermath of devastation, we, the survivors of a once-peaceful village, 
-              rise from smoldering ruins united by grief and bound by an ember of vengeance. 
-              Our journey, steeped in mist-wreathed mountains and tempered by ancient samurai masters, 
-              transforms us into avatars of divine retribution. Bestowed with celestial gifts by the Gods, 
-              we return to challenge the tyrant emperor, wielding the grace of wind and fury of the storm.
-            </p>
-          </motion.div>
-
-          {/* Stats Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto"
-          >
-            {[
-              { label: "Total NFTs", value: "1,600" },
-              { label: "Unique Traits", value: "200+" },
-              { label: "Animations", value: "20+" }
-            ].map((stat, index) => (
-              <div 
-                key={index} 
-                className="bg-neutral-900/50 backdrop-blur-sm border border-red-900/20 rounded-xl p-6 text-center hover:border-red-500 transition-all duration-300"
-              >
-                <div className="text-4xl font-bold text-red-500 mb-2">{stat.value}</div>
-                <div className="text-gray-300">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Journey Path Visual */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mt-20 relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-900/0 via-red-900/10 to-red-900/0" />
-            <div className="relative max-w-4xl mx-auto py-12">
-              <div className="flex justify-between items-center">
-                {["Origin", "Training", "Awakening", "Destiny"].map((step, index) => (
-                  <div key={index} className="flex flex-col items-center">
-                    <div className="w-4 h-4 bg-red-500 rounded-full mb-2" />
-                    <div className="text-sm text-gray-300">{step}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="absolute top-[2.25rem] left-0 right-0 h-px bg-gradient-to-r from-red-900/0 via-red-500 to-red-900/0" />
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 
+// Stats Section Component
+const StatsSection = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay: 0.4 }}
+    className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto mb-20"
+  >
+    {[
+      { label: "Total NFTs", value: "1,600" },
+      { label: "Unique Traits", value: "200+" },
+      { label: "Animations", value: "20+" }
+    ].map((stat, index) => (
+      <div 
+        key={index} 
+        className="bg-neutral-900/50 backdrop-blur-sm border border-red-900/20 rounded-xl p-6 text-center hover:border-red-500 transition-all duration-300"
+      >
+        <div className="text-4xl font-bold text-red-500 mb-2">{stat.value}</div>
+        <div className="text-gray-300">{stat.label}</div>
+      </div>
+    ))}
+  </motion.div>
+);
+
+// Journey Path Component
+const JourneyPath = () => (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.6, delay: 0.6 }}
+    className="relative max-w-4xl mx-auto mb-20"
+  >
+    <div className="absolute inset-0 bg-gradient-to-r from-red-900/0 via-red-900/10 to-red-900/0" />
+    <div className="relative py-12">
+      <div className="flex justify-between items-center">
+        {["Origin", "Training", "Awakening", "Destiny"].map((step, index) => (
+          <div key={index} className="flex flex-col items-center">
+            <div className="w-4 h-4 bg-red-500 rounded-full mb-2" />
+            <div className="text-sm text-gray-300">{step}</div>
+          </div>
+        ))}
+      </div>
+      <div className="absolute top-[2.25rem] left-0 right-0 h-px bg-gradient-to-r from-red-900/0 via-red-500 to-red-900/0" />
+    </div>
+  </motion.div>
+);
+
+// NFT Collection Stats Component
+const CollectionStats = () => (
+  <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+    {[
+      { label: "Floor Price", value: "2.5 ETH" },
+      { label: "Volume Traded", value: "1.2K ETH" },
+      { label: "Unique Holders", value: "847" }
+    ].map((stat, index) => (
+      <motion.div
+        key={index}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="bg-neutral-900/50 backdrop-blur-sm border border-red-900/20 rounded-xl p-6 text-center hover:border-red-500 transition-all duration-300"
+      >
+        <div className="text-4xl font-bold text-red-500 mb-2">{stat.value}</div>
+        <div className="text-gray-300">{stat.label}</div>
+      </motion.div>
+    ))}
+  </div>
+);
+
+// Collection Description Component
+const CollectionDescription = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="mt-24 max-w-4xl mx-auto text-center"
+  >
+    <p className="text-xl text-gray-400 leading-relaxed">
+      Each Bushido NFT is a unique masterpiece, featuring intricate 3D artwork and animations 
+      that bring the spirit of the samurai to life. As a holder, you'll have the power to 
+      influence the story's direction and potentially see your character featured in our 
+      upcoming animated series.
+    </p>
+  </motion.div>
+);
+
+// Community CTA Component
+const CommunityCallToAction = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    whileInView={{ opacity: 1, scale: 1 }}
+    viewport={{ once: true }}
+    className="mt-24 bg-gradient-to-r from-red-900/20 to-black border border-red-900/20 rounded-3xl p-12 text-center max-w-4xl mx-auto"
+  >
+    <h2 className="text-4xl font-bold text-white mb-6">Join Our Legacy</h2>
+    <p className="text-xl text-gray-400 mb-8">
+      Become part of a legendary community where ancient wisdom meets digital innovation. 
+      Shape the future of storytelling through NFT ownership and collaborative narrative building.
+    </p>
+    <div className="flex flex-col sm:flex-row justify-center gap-4">
+      <button 
+        onClick={() => window.open('https://discord.gg/bushido', '_blank')}
+        className="px-8 py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl transition-all duration-300"
+      >
+        Join Discord
+      </button>
+      <button 
+        onClick={() => window.open('https://twitter.com/BushidoNFT', '_blank')}
+        className="px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl transition-all duration-300"
+      >
+        Follow Twitter
+      </button>
+    </div>
+  </motion.div>
+);
+
+      // Main CollectionGrid Component
 const CollectionGrid = () => {
   const { isDark } = useTheme();
   const { language } = useLanguage();
   const currentLang = language?.code || 'en';
   const [selectedNFT, setSelectedNFT] = useState(null);
 
-  const handleViewDetails = (nft) => {
-    setSelectedNFT(nft);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">
-      {/* Lore Section with Video */}
-      <LoreSection />
-      
-      {/* Collection Grid */}
+      {/* Hero Section with Video Background */}
+      <div className="relative bg-black text-white">
+        <VideoBackground />
+        
+        <div className="relative z-10">
+          <div className="container mx-auto px-4 py-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center max-w-4xl mx-auto mb-20"
+            >
+              <div className="inline-block p-2 bg-red-900/20 rounded-lg mb-6">
+                <Scroll className="w-8 h-8 text-red-500" />
+              </div>
+              <h1 className="text-5xl font-bold mb-6">The Samurai Legacy</h1>
+              <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
+              <p className="text-xl text-gray-300 leading-relaxed mb-8">
+                To reclaim serenity from despair, we unite with celestial gifts, forging a legacy 
+                of honor, justice, and unwavering spirit against tyranny's dark tide.
+              </p>
+              <p className="text-xl text-gray-300 leading-relaxed">
+                In the aftermath of devastation, we, the survivors of a once-peaceful village, 
+                rise from smoldering ruins united by grief and bound by an ember of vengeance. 
+                Our journey, steeped in mist-wreathed mountains and tempered by ancient samurai masters, 
+                transforms us into avatars of divine retribution.
+              </p>
+            </motion.div>
+
+            <StatsSection />
+            <JourneyPath />
+          </div>
+        </div>
+      </div>
+
+      {/* Collection Grid Section */}
       <div className="container mx-auto px-4 py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -334,7 +408,7 @@ const CollectionGrid = () => {
               whileHover={{ scale: 1.02 }}
               className="bg-neutral-900 rounded-lg overflow-hidden shadow-lg border border-red-900/20"
             >
-<img
+              <img
                 src={image.src}
                 alt={image.alt[currentLang]}
                 className="w-full h-72 object-contain bg-black"
@@ -347,7 +421,7 @@ const CollectionGrid = () => {
                   A unique piece of the Bushido collection, embodying the spirit of the Samurai.
                 </p>
                 <button 
-                  onClick={() => handleViewDetails(image)}
+                  onClick={() => setSelectedNFT(image)}
                   className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition-all duration-300 w-full"
                 >
                   View Details
@@ -357,6 +431,12 @@ const CollectionGrid = () => {
           ))}
         </div>
 
+        {/* Additional Sections */}
+        <CollectionStats />
+        <CollectionDescription />
+        <CommunityCallToAction />
+
+        {/* NFT Details Modal */}
         <NFTDetailsModal
           isOpen={selectedNFT !== null}
           onClose={() => setSelectedNFT(null)}
@@ -364,6 +444,11 @@ const CollectionGrid = () => {
           isDark={isDark}
           currentLang={currentLang}
         />
+
+        {/* Background Elements */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/5 via-black/0 to-black/0" />
+        </div>
       </div>
     </div>
   );
