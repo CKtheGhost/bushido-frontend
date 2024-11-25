@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export const presetModels = [
   { 
     name: 'Default Samurai', 
@@ -33,30 +35,45 @@ export const presetModels = [
   },
 ];
 
-export const animationConfig = {
-  walk: {
+export const animations = [
+  {
     name: 'Walk',
     path: '/models/animations/Catwalk Walk Turn 180 Tight.fbx',
-    duration: 2
+    defaultSpeed: 1,
+    loop: THREE.LoopRepeat,
+    blendDuration: 0.5,
+    clipName: 'mixamo.com' // Default Mixamo animation name
   },
-  dying: {
-    name: 'Dying',
+  {
+    name: 'Death',
     path: '/models/animations/Dying.fbx',
-    duration: 3
+    defaultSpeed: 1,
+    loop: THREE.LoopOnce,
+    blendDuration: 0.3,
+    clipName: 'mixamo.com'
   },
-  hipHopDance: {
-    name: 'Hip Hop Dance',
+  {
+    name: 'Hip Hop',
     path: '/models/animations/Hip Hop Dancing.fbx',
-    duration: 2
+    defaultSpeed: 1,
+    loop: THREE.LoopRepeat,
+    blendDuration: 0.4,
+    clipName: 'mixamo.com'
   },
-  pray: {
+  {
     name: 'Pray',
     path: '/models/animations/Praying.fbx',
-    duration: 2
+    defaultSpeed: 1,
+    loop: THREE.LoopRepeat,
+    blendDuration: 0.5,
+    clipName: 'mixamo.com'
   },
-  sillyDance: {
-    name: 'Silly Dance',
+  {
+    name: 'Dance',
     path: '/models/animations/Silly Dancing.fbx',
-    duration: 2
+    defaultSpeed: 1,
+    loop: THREE.LoopRepeat,
+    blendDuration: 0.4,
+    clipName: 'mixamo.com'
   }
-};
+];
