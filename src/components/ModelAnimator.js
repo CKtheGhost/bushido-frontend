@@ -1,47 +1,138 @@
-import React, { useState } from 'react';
-import { ChevronDown, Play, Pause, RotateCw, Camera } from 'lucide-react';
+import React, { useState, useCallback, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { 
+  OrbitControls,
+  useGLTF, 
+  Environment, 
+  Center,
+  ContactShadows,
+  PerspectiveCamera
+} from '@react-three/drei';
+import { ChevronDown, Camera, Upload, AlertCircle, RotateCw } from 'lucide-react';
 
+// Define preset models
+const presetModels = [
+  { 
+    name: 'Default Samurai', 
+    path: '/models/character.glb'
+  },
+  { 
+    name: 'Shadow Warrior', 
+    path: '/models/character (1).glb' 
+  },
+  { 
+    name: 'Dragon Knight', 
+    path: '/models/character (2).glb' 
+  },
+  { 
+    name: 'Storm Blade', 
+    path: '/models/character (3).glb' 
+  },
+  { 
+    name: 'Flame Master', 
+    path: '/models/character (4).glb' 
+  },
+  { 
+    name: 'Thunder Lord', 
+    path: '/models/character (5).glb' 
+  },
+  { 
+    name: 'Wind Walker', 
+    path: '/models/character (6).glb' 
+  },
+  { 
+    name: 'Void Seeker', 
+    path: '/models/character (7).glb' 
+  },
+];
+
+// Basic Model Component
+const Model = ({ modelPath }) => {
+  const { scene } = useGLTF(modelPath);
+
+  React.useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  return (
+    <Center>
+      <primitive object={scene} scale={2} position={[0, -1, 0]} />
+    </Center>
+  );
+};
+
+// Scene Component
+const Scene = ({ children }) => {
+  return (
+    <>
+      <Environment preset="sunset" background blur={0.8} />
+      <ambientLight intensity={0.5} />
+      <directionalLight
+        castShadow
+        position={[2.5, 8, 5]}
+        intensity={1.5}
+        shadow-mapSize={[1024, 1024]}
+      >
+        <orthographicCamera attach="shadow-camera" args={[-10, 10, -10, 10, 0.1, 50]} />
+      </directionalLight>
+      <ContactShadows
+        opacity={0.4}
+        scale={10}
+        blur={2}
+        far={4}
+        resolution={256}
+        color="#000000"
+      />
+      <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={45} />
+      {children}
+    </>
+  );
+};
+
+// Main Component
 const ModelAnimator = () => {
-  const [selectedTraits, setSelectedTraits] = useState({
-    armor: 'default',
-    weapon: 'katana',
-    mask: 'none'
-  });
-  
-  const [selectedAnimation, setSelectedAnimation] = useState('idle');
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [rotation, setRotation] = useState(0);
-  
-  const traits = {
-    armor: ['default', 'gold', 'silver', 'bronze', 'shadow'],
-    weapon: ['katana', 'nodachi', 'wakizashi', 'naginata', 'tanto'],
-    mask: ['none', 'oni', 'kitsune', 'hannya', 'menpo']
-  };
-  
-  const animations = [
-    'idle',
-    'battle-stance',
-    'attack',
-    'defend',
-    'meditate',
-    'walk',
-    'run'
-  ];
+  const [selectedModel, setSelectedModel] = useState(presetModels[0]);
+  const [customModel, setCustomModel] = useState(null);
+  const [error, setError] = useState(null);
+  const [cameraRotation, setCameraRotation] = useState(0);
 
-  const handleTraitChange = (category, value) => {
-    setSelectedTraits(prev => ({
-      ...prev,
-      [category]: value
-    }));
-  };
+  const handleModelChange = useCallback((model) => {
+    setSelectedModel(model);
+    setError(null);
+  }, []);
 
-  const handleRotation = () => {
-    setRotation(prev => (prev + 45) % 360);
-  };
+  const handleCustomModelUpload = useCallback((event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.name.toLowerCase().endsWith('.glb')) {
+        const url = URL.createObjectURL(file);
+        setCustomModel(url);
+        setSelectedModel(null);
+        setError(null);
+      } else {
+        setError('Please upload a GLB file');
+      }
+    }
+  }, []);
 
-  const captureScreenshot = () => {
-    console.log('Capturing screenshot...');
-  };
+  const handleRotation = useCallback(() => {
+    setCameraRotation(prev => prev + Math.PI / 2);
+  }, []);
+
+  const captureScreenshot = useCallback(() => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = 'samurai-model.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">
@@ -53,52 +144,78 @@ const ModelAnimator = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Panel - Traits */}
-          <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20">
-            <h2 className="text-2xl font-bold text-white mb-6">Traits</h2>
-            
-            {Object.entries(traits).map(([category, options]) => (
-              <div key={category} className="mb-6">
-                <label className="text-gray-300 text-lg capitalize mb-2 block">
-                  {category}
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedTraits[category]}
-                    onChange={(e) => handleTraitChange(category, e.target.value)}
-                    className="w-full bg-gray-800 text-white rounded-lg p-3 pr-10 appearance-none border border-red-900/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+          {/* Left Panel - Model Selection */}
+          <div className="space-y-6">
+            {/* Preset Models */}
+            <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20">
+              <h2 className="text-2xl font-bold text-white mb-6">Preset Models</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {presetModels.map((model, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleModelChange(model)}
+                    className={`p-4 rounded-lg text-white transition-all ${
+                      selectedModel === model
+                        ? 'bg-red-600 hover:bg-red-500'
+                        : 'bg-gray-800 hover:bg-gray-700'
+                    }`}
                   >
-                    {options.map(option => (
-                      <option key={option} value={option}>
-                        {option.charAt(0).toUpperCase() + option.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                </div>
+                    {model.name}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Custom Model Upload */}
+            <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20">
+              <h2 className="text-2xl font-bold text-white mb-6">Custom Model</h2>
+              <div className="space-y-4">
+                <label className="block w-full">
+                  <div className="flex items-center justify-center w-full h-32 border-2 border-red-900/20 border-dashed rounded-lg cursor-pointer hover:border-red-500/50 transition-colors">
+                    <div className="space-y-2 text-center">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="text-gray-400">Upload GLB file</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".glb"
+                      onChange={handleCustomModelUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </label>
+                {error && (
+                  <div className="flex items-center gap-2 text-red-500">
+                    <AlertCircle className="w-5 h-5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Center Panel - Model Viewer */}
           <div className="lg:col-span-2">
             <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20 h-[600px] relative">
-              {/* Placeholder for 3D Model Viewer */}
-              <div 
-                className="w-full h-full bg-black/50 rounded-lg flex items-center justify-center"
-                style={{ transform: `rotateY(${rotation}deg)`, transition: 'transform 0.3s ease-in-out' }}
-              >
-                <p className="text-gray-500 text-lg">3D Model Viewer</p>
-              </div>
+              <Canvas shadows gl={{ preserveDrawingBuffer: true }}>
+                <Suspense fallback={null}>
+                  <Scene>
+                    {(customModel || selectedModel?.path) && (
+                      <Model modelPath={customModel || selectedModel.path} />
+                    )}
+                  </Scene>
+                  <OrbitControls
+                    makeDefault
+                    minPolarAngle={0}
+                    maxPolarAngle={Math.PI / 2}
+                    target={[0, 0, 0]}
+                    rotation={[0, cameraRotation, 0]}
+                  />
+                </Suspense>
+              </Canvas>
 
               {/* Controls */}
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="p-3 bg-red-600 hover:bg-red-500 rounded-full text-white transition-all"
-                >
-                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                </button>
                 <button
                   onClick={handleRotation}
                   className="p-3 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition-all"
@@ -113,28 +230,6 @@ const ModelAnimator = () => {
                 </button>
               </div>
             </div>
-
-            {/* Animation Selection */}
-            <div className="mt-6 bg-gray-900/50 rounded-xl p-6 border border-red-900/20">
-              <h2 className="text-2xl font-bold text-white mb-6">Animations</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {animations.map(animation => (
-                  <button
-                    key={animation}
-                    onClick={() => setSelectedAnimation(animation)}
-                    className={`p-3 rounded-lg text-white transition-all ${
-                      selectedAnimation === animation
-                        ? 'bg-red-600 hover:bg-red-500'
-                        : 'bg-gray-800 hover:bg-gray-700'
-                    }`}
-                  >
-                    {animation.split('-').map(word => 
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -143,4 +238,3 @@ const ModelAnimator = () => {
 };
 
 export default ModelAnimator;
-
