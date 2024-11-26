@@ -1,131 +1,23 @@
-import React, { useState, useCallback, Suspense, useRef, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useState, useCallback, Suspense, useEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { 
   OrbitControls,
   useGLTF, 
   Environment, 
-  Center,
   ContactShadows,
-  PerspectiveCamera,
-  useAnimations
+  PerspectiveCamera
 } from '@react-three/drei';
-import { ChevronDown, Camera, Upload, AlertCircle, RotateCw, Play, Pause, RefreshCw } from 'lucide-react';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+import { Camera, Upload, AlertCircle, RotateCw, Play, Pause, RefreshCw } from 'lucide-react';
 import * as THREE from 'three';
 import { presetModels, animations } from './ModelAnimatorConfig';
+import AnimatedModel from './AnimatedModel';
 
 // Preload models
 presetModels.forEach(model => {
   useGLTF.preload(model.path);
 });
 
-// Enhanced Model Component
-const AnimatedModel = ({ modelPath, animation, isPlaying, speed = 1, loop = true }) => {
-  const group = useRef();
-  const { scene, animations: modelAnimations } = useGLTF(modelPath);
-  const [mixer] = useState(() => new THREE.AnimationMixer(scene));
-  const [animationClip, setAnimationClip] = useState(null);
-  const currentAction = useRef(null);
-  const previousAction = useRef(null);
-
-  // Load animation FBX
-  useEffect(() => {
-    if (animation?.path) {
-      const loader = new FBXLoader();
-      loader.load(animation.path, (fbx) => {
-        const clip = fbx.animations[0];
-        if (clip) {
-          clip.name = animation.name;
-          setAnimationClip(clip);
-        }
-      });
-    }
-    
-    return () => {
-      if (currentAction.current) {
-        currentAction.current.stop();
-      }
-    };
-  }, [animation]);
-
-  // Handle animation changes
-  useEffect(() => {
-    if (!animationClip || !mixer) return;
-
-    const newAction = mixer.clipAction(animationClip);
-    
-    if (currentAction.current) {
-      previousAction.current = currentAction.current;
-      const blendTime = animation?.blendDuration || 0.5;
-      
-      newAction
-        .reset()
-        .setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-        .setEffectiveTimeScale(speed)
-        .setEffectiveWeight(1);
-        
-      newAction.clampWhenFinished = !loop;
-      newAction.crossFadeFrom(previousAction.current, blendTime, true);
-      newAction.play();
-    } else {
-      newAction
-        .reset()
-        .setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-        .setEffectiveTimeScale(speed)
-        .play();
-    }
-    
-    currentAction.current = newAction;
-    
-    return () => {
-      if (newAction) {
-        newAction.stop();
-      }
-    };
-  }, [animationClip, mixer, animation, loop, speed]);
-
-  // Update animation state
-  useEffect(() => {
-    if (currentAction.current) {
-      currentAction.current.paused = !isPlaying;
-      currentAction.current.timeScale = speed;
-    }
-  }, [isPlaying, speed]);
-
-  // Animation frame update
-  useFrame((state, delta) => {
-    mixer.update(delta);
-  });
-
-  // Setup materials and shadows
-  useEffect(() => {
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        
-        if (child.material) {
-          child.material = new THREE.MeshPhysicalMaterial({
-            ...child.material,
-            roughness: 0.7,
-            metalness: 0.3,
-            envMapIntensity: 1
-          });
-        }
-      }
-    });
-  }, [scene]);
-
-  return (
-    <group ref={group}>
-      <Center>
-        <primitive object={scene} scale={2} position={[0, -1, 0]} />
-      </Center>
-    </group>
-  );
-};
-
-// Scene setup
+// Scene Component
 const Scene = ({ children }) => (
   <>
     <Environment preset="sunset" background blur={0.8} />
@@ -151,46 +43,7 @@ const Scene = ({ children }) => (
   </>
 );
 
-// Animation Controls
-const AnimationControls = ({ 
-  animation,
-  isPlaying,
-  speed,
-  loop,
-  onPlayPause,
-  onSpeedChange,
-  onLoopToggle
-}) => (
-  <div className="flex items-center gap-2 bg-gray-800/80 backdrop-blur-sm rounded-lg p-2">
-    <button
-      onClick={onPlayPause}
-      className="p-2 rounded-lg hover:bg-gray-700 text-white transition-all"
-      disabled={!animation}
-    >
-      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-    </button>
-    <input
-      type="range"
-      min="0.1"
-      max="2"
-      step="0.1"
-      value={speed}
-      onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-      className="w-24 accent-red-500"
-    />
-    <span className="text-white text-sm">{speed.toFixed(1)}x</span>
-    <button
-      onClick={onLoopToggle}
-      className={`p-2 rounded-lg transition-all ${
-        loop ? 'bg-red-600 hover:bg-red-500' : 'hover:bg-gray-700'
-      } text-white`}
-    >
-      <RefreshCw size={20} />
-    </button>
-  </div>
-);
-
-// Main Component
+// Main ModelAnimator Component
 const ModelAnimator = () => {
   const [selectedModel, setSelectedModel] = useState(presetModels[0]);
   const [customModel, setCustomModel] = useState(null);
@@ -201,15 +54,47 @@ const ModelAnimator = () => {
   const [error, setError] = useState(null);
   const [cameraRotation, setCameraRotation] = useState(0);
 
+  // Debug animation state changes
+  useEffect(() => {
+    if (selectedAnimation) {
+      console.log('Animation state changed:', {
+        name: selectedAnimation.name,
+        path: selectedAnimation.path,
+        isPlaying,
+        speed: animationSpeed,
+        loop: loopAnimation
+      });
+    }
+  }, [selectedAnimation, isPlaying, animationSpeed, loopAnimation]);
+
   const handleModelChange = useCallback((model) => {
+    console.log('Model changed:', model);
     setSelectedModel(model);
     setError(null);
+  }, []);
+
+  const handleAnimationSelect = useCallback((animation) => {
+    console.log('Animation selected:', animation);
+    // Verify animation file exists
+    fetch(animation.path)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Animation file not found');
+        }
+        setSelectedAnimation(animation);
+        setIsPlaying(true);
+      })
+      .catch(error => {
+        console.error('Animation load error:', error);
+        setError(`Failed to load animation: ${error.message}`);
+      });
   }, []);
 
   const handleCustomModelUpload = useCallback((event) => {
     const file = event.target.files[0];
     if (file) {
       if (file.name.toLowerCase().endsWith('.glb')) {
+        console.log('Loading custom model:', file.name);
         const url = URL.createObjectURL(file);
         setCustomModel(url);
         setSelectedModel(null);
@@ -218,11 +103,6 @@ const ModelAnimator = () => {
         setError('Please upload a GLB file');
       }
     }
-  }, []);
-
-  const handleAnimationSelect = useCallback((animation) => {
-    setSelectedAnimation(animation);
-    setIsPlaying(true);
   }, []);
 
   const handleRotation = useCallback(() => {
@@ -342,10 +222,11 @@ const ModelAnimator = () => {
                     {(customModel || selectedModel?.path) && (
                       <AnimatedModel 
                         modelPath={customModel || selectedModel.path}
-                        animation={selectedAnimation}
+                        animationPath={selectedAnimation?.path}
                         isPlaying={isPlaying}
                         speed={animationSpeed}
                         loop={loopAnimation}
+                        key={`${selectedModel?.path}-${selectedAnimation?.path}`}
                       />
                     )}
                   </Scene>
@@ -359,17 +240,35 @@ const ModelAnimator = () => {
                 </Suspense>
               </Canvas>
 
-              {/* Animation Controls */}
+              {/* Controls */}
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-                <AnimationControls
-                  animation={selectedAnimation}
-                  isPlaying={isPlaying}
-                  speed={animationSpeed}
-                  loop={loopAnimation}
-                  onPlayPause={() => setIsPlaying(!isPlaying)}
-                  onSpeedChange={setAnimationSpeed}
-                  onLoopToggle={() => setLoopAnimation(!loopAnimation)}
-                />
+                <div className="flex items-center gap-2 bg-gray-800/80 backdrop-blur-sm rounded-lg p-2">
+                  <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="p-2 rounded-lg hover:bg-gray-700 text-white transition-all"
+                    disabled={!selectedAnimation}
+                  >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="2"
+                    step="0.1"
+                    value={animationSpeed}
+                    onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+                    className="w-24 accent-red-500"
+                  />
+                  <span className="text-white text-sm">{animationSpeed.toFixed(1)}x</span>
+                  <button
+                    onClick={() => setLoopAnimation(!loopAnimation)}
+                    className={`p-2 rounded-lg transition-all ${
+                      loopAnimation ? 'bg-red-600 hover:bg-red-500' : 'hover:bg-gray-700'
+                    } text-white`}
+                  >
+                    <RefreshCw size={20} />
+                  </button>
+                </div>
                 
                 <div className="flex gap-2">
                   <button
@@ -387,7 +286,7 @@ const ModelAnimator = () => {
                 </div>
               </div>
 
-              {/* Loading Overlay */}
+              {/* Loading State */}
               {!selectedModel && !customModel && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                   <div className="text-white text-xl">

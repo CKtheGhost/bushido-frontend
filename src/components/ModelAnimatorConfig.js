@@ -32,48 +32,131 @@ export const presetModels = [
   { 
     name: 'Void Seeker', 
     path: '/models/character (7).glb' 
-  },
+  }
 ];
 
 export const animations = [
   {
     name: 'Walk',
-    path: '/models/animations/Catwalk Walk Turn 180 Tight.fbx',
+    path: '/models/animations/walk.glb',
     defaultSpeed: 1,
     loop: THREE.LoopRepeat,
     blendDuration: 0.5,
-    clipName: 'mixamo.com' // Default Mixamo animation name
+    category: 'movement'
   },
   {
     name: 'Death',
-    path: '/models/animations/Dying.fbx',
+    path: '/models/animations/death.glb',
     defaultSpeed: 1,
     loop: THREE.LoopOnce,
     blendDuration: 0.3,
-    clipName: 'mixamo.com'
+    category: 'action'
   },
   {
-    name: 'Hip Hop',
-    path: '/models/animations/Hip Hop Dancing.fbx',
+    name: 'Hip Hop Dance',
+    path: '/models/animations/hiphop.glb',
     defaultSpeed: 1,
     loop: THREE.LoopRepeat,
     blendDuration: 0.4,
-    clipName: 'mixamo.com'
+    category: 'dance'
   },
   {
     name: 'Pray',
-    path: '/models/animations/Praying.fbx',
+    path: '/models/animations/pray.glb',
     defaultSpeed: 1,
     loop: THREE.LoopRepeat,
     blendDuration: 0.5,
-    clipName: 'mixamo.com'
+    category: 'action'
   },
   {
     name: 'Dance',
-    path: '/models/animations/Silly Dancing.fbx',
+    path: '/models/animations/dance.glb',
     defaultSpeed: 1,
     loop: THREE.LoopRepeat,
     blendDuration: 0.4,
-    clipName: 'mixamo.com'
+    category: 'dance'
   }
 ];
+
+// Environment settings for consistent scene setup
+export const environmentSettings = {
+  default: {
+    preset: 'sunset',
+    blur: 0.8,
+    background: true
+  },
+  lighting: {
+    ambient: {
+      intensity: 0.5
+    },
+    directional: {
+      intensity: 1.5,
+      position: [2.5, 8, 5],
+      shadowMapSize: 1024
+    }
+  }
+};
+
+// Material presets for consistent model appearance
+export const materialPresets = {
+  default: {
+    roughness: 0.7,
+    metalness: 0.3,
+    envMapIntensity: 1
+  },
+  metal: {
+    roughness: 0.2,
+    metalness: 0.8,
+    envMapIntensity: 1.5
+  },
+  matte: {
+    roughness: 0.9,
+    metalness: 0.1,
+    envMapIntensity: 0.5
+  }
+};
+
+// Camera settings for consistent view
+export const cameraSettings = {
+  default: {
+    position: [0, 2, 5],
+    fov: 45,
+    near: 0.1,
+    far: 1000
+  },
+  controls: {
+    minPolarAngle: 0,
+    maxPolarAngle: Math.PI / 2,
+    enableDamping: true,
+    dampingFactor: 0.05
+  }
+};
+
+// Animation settings for consistent behavior
+export const animationSettings = {
+  defaultBlendTime: 0.5,
+  speedRange: {
+    min: 0.1,
+    max: 2,
+    step: 0.1
+  },
+  defaultSpeed: 1
+};
+
+// Model settings for consistent scaling and positioning
+export const modelSettings = {
+  scale: 2,
+  position: [0, -1, 0],
+  rotation: [0, 0, 0],
+  castShadow: true,
+  receiveShadow: true
+};
+
+// Debug settings for development
+export const debugSettings = {
+  enabled: process.env.NODE_ENV === 'development',
+  logAnimations: true,
+  logModelChanges: true,
+  showLoadingStates: true,
+  showErrorMessages: true
+};
