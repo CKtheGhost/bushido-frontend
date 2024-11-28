@@ -1,81 +1,60 @@
-import React from 'react';
+// Scene.js
+import React, { Suspense } from 'react';
 import { 
   Environment, 
-  AccumulativeShadows, 
-  RandomizedLight,
-  Backdrop,
-  ContactShadows 
+  ContactShadows,
+  Html
 } from '@react-three/drei';
+import { environmentSettings } from './ModelAnimatorConfig';
 
-const Scene = ({ children, environmentPreset = 'dawn' }) => {
-  return (
-    <>
-      {/* Main Environment */}
-      <Environment
-        preset={environmentPreset}
-        background
-        blur={0.8}
-      />
+const LoadingSpinner = () => (
+  <Html center>
+    <div className="bg-black/80 text-white px-6 py-4 rounded-lg">
+      <div className="flex items-center gap-3">
+        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        <span>Loading scene...</span>
+      </div>
+    </div>
+  </Html>
+);
 
-      {/* Main Directional Light */}
-      <directionalLight
-        position={[10, 10, 5]}
-        intensity={1}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />
+const Scene = React.memo(({ children }) => (
+  <Suspense fallback={<LoadingSpinner />}>
+    {/* Environment */}
+    <Environment 
+      preset={environmentSettings.default.preset} 
+      background={environmentSettings.default.background}
+      blur={environmentSettings.default.blur} 
+    />
 
-      {/* Fill Light */}
-      <directionalLight
-        position={[-5, 5, -5]}
-        intensity={0.5}
-        castShadow={false}
-      />
+    {/* Lighting */}
+    <ambientLight intensity={environmentSettings.lighting.ambient.intensity} />
+    <directionalLight
+      castShadow
+      position={environmentSettings.lighting.directional.position}
+      intensity={environmentSettings.lighting.directional.intensity}
+      shadow-mapSize-width={environmentSettings.lighting.directional.shadowMapSize}
+      shadow-mapSize-height={environmentSettings.lighting.directional.shadowMapSize}
+    >
+      <orthographicCamera attach="shadow-camera" args={[-10, 10, -10, 10, 0.1, 50]} />
+    </directionalLight>
 
-      {/* Ambient Light */}
-      <ambientLight intensity={0.5} />
+    {/* Ground shadow */}
+    <ContactShadows
+      opacity={0.4}
+      scale={10}
+      blur={2}
+      far={4}
+      resolution={256}
+      color="#000000"
+      position={[0, -0.5, 0]}
+    />
 
-      {/* Accumulative Shadows */}
-      <AccumulativeShadows
-        position={[0, -0.99, 0]}
-        scale={10}
-        color="#316d39"
-        opacity={0.8}
-        frames={100}
-        temporal
-      >
-        <RandomizedLight
-          position={[8, 5, -5]}
-          amount={8}
-          radius={1}
-          ambient={0.5}
-          intensity={1}
-          size={10}
-          bias={0.001}
-        />
-      </AccumulativeShadows>
+    {/* Scene content */}
+    {children}
+  </Suspense>
+));
 
-      {/* Contact Shadows */}
-      <ContactShadows
-        position={[0, -0.98, 0]}
-        scale={10}
-        resolution={512}
-        far={1}
-        blur={2}
-        opacity={0.8}
-      />
+Scene.displayName = 'Scene';
 
-      {/* Backdrop */}
-      <Backdrop
-        receiveShadow
-        scale={[20, 5, 5]}
-        position={[0, -0.5, -3]}
-        rotation={[0, 0, 0]}
-      >
-        <meshStandardMaterial color="#353540" />
-      </Backdrop>
-
-      {children}
-    </>
-  );
-};
+export default Scene;

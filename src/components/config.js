@@ -36,27 +36,22 @@ export const presetModels = [
 export const animationConfig = {
   walk: {
     name: 'Walk',
-    path: '/models/animations/Catwalk Walk Turn 180 Tight.fbx',
+    path: '/models/animations/walk.glb',
     duration: 2
   },
   dying: {
     name: 'Dying',
-    path: '/models/animations/Dying.fbx',
+    path: '/models/animations/death.glb',
     duration: 3
   },
   hipHopDance: {
     name: 'Hip Hop Dance',
-    path: '/models/animations/Hip Hop Dancing.fbx',
+    path: '/models/animations/dance.glb',
     duration: 2
   },
   pray: {
     name: 'Pray',
-    path: '/models/animations/Praying.fbx',
-    duration: 2
-  },
-  sillyDance: {
-    name: 'Silly Dance',
-    path: '/models/animations/Silly Dancing.fbx',
+    path: '/models/animations/pray.glb',
     duration: 2
   }
 };
