@@ -78,7 +78,7 @@ export const animations = [
   }
 ];
 
-// Environment and rendering settings
+// Environment settings for consistent scene setup
 export const environmentSettings = {
   default: {
     preset: 'sunset',
@@ -97,14 +97,53 @@ export const environmentSettings = {
   }
 };
 
+// Material presets for consistent model appearance
 export const materialPresets = {
   default: {
     roughness: 0.7,
     metalness: 0.3,
     envMapIntensity: 1
+  },
+  metal: {
+    roughness: 0.2,
+    metalness: 0.8,
+    envMapIntensity: 1.5
+  },
+  matte: {
+    roughness: 0.9,
+    metalness: 0.1,
+    envMapIntensity: 0.5
   }
 };
 
+// Camera settings for consistent view
+export const cameraSettings = {
+  default: {
+    position: [0, 2, 5],
+    fov: 45,
+    near: 0.1,
+    far: 1000
+  },
+  controls: {
+    minPolarAngle: 0,
+    maxPolarAngle: Math.PI / 2,
+    enableDamping: true,
+    dampingFactor: 0.05
+  }
+};
+
+// Animation settings for consistent behavior
+export const animationSettings = {
+  defaultBlendTime: 0.5,
+  speedRange: {
+    min: 0.1,
+    max: 2,
+    step: 0.1
+  },
+  defaultSpeed: 1
+};
+
+// Model settings for consistent scaling and positioning
 export const modelSettings = {
   scale: 2,
   position: [0, -1, 0],
@@ -113,6 +152,7 @@ export const modelSettings = {
   receiveShadow: true
 };
 
+// Debug settings for development
 export const debugSettings = {
   enabled: process.env.NODE_ENV === 'development',
   logAnimations: true,
