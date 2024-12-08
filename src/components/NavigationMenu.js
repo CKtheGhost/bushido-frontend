@@ -17,7 +17,8 @@ const NavigationMenu = ({ currentPath }) => {
       { title: 'Samurai Legacy', path: '/samurai-legacy' },
       { title: 'Community', path: '/community' },
       { title: 'Animator', path: '/animator' },
-      { title: 'Animated Series', path: '/animated-series' }
+      { title: 'Animated Series', path: '/animated-series' },
+      { title: 'Community Animator', path: '/community-animator' }
     ],
     jp: [
       { title: 'ホーム', path: '/' },
@@ -25,7 +26,8 @@ const NavigationMenu = ({ currentPath }) => {
       { title: '侍の伝説', path: '/samurai-legacy' },
       { title: 'コミュニティ', path: '/community' },
       { title: 'アニメーター', path: '/animator' },
-      { title: 'アニメシリーズ', path: '/animated-series' }
+      { title: 'アニメシリーズ', path: '/animated-series' },
+      { title: 'コミュニティアニメーター', path: '/community-animator' }
     ],
     kr: [
       { title: '홈', path: '/' },
@@ -33,7 +35,8 @@ const NavigationMenu = ({ currentPath }) => {
       { title: '사무라이 레거시', path: '/samurai-legacy' },
       { title: '커뮤니티', path: '/community' },
       { title: '애니메이터', path: '/animator' },
-      { title: '애니메이션 시리즈', path: '/animated-series' }
+      { title: '애니메이션 시리즈', path: '/animated-series' },
+      { title: '커뮤니티 애니메이터', path: '/community-animator' }
     ]
   };
 

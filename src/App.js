@@ -3,12 +3,14 @@ import Layout from './components/Layout';
 import LoadingTransition from './components/LoadingTransition';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { Web3Provider } from './contexts/Web3Context';
 import HomePage from './components/HomePage';
 import CollectionGrid from './components/CollectionGrid';
 import ModelAnimator from './components/ModelAnimator';
 import SamuraiLegacy from './components/SamuraiLegacy';
 import CommunityGovernance from './components/CommunityGovernance';
 import AnimatedSeries from './components/AnimatedSeries';
+import CommunityAnimator from './components/CommunityAnimator';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('/');
@@ -41,21 +43,25 @@ const App = () => {
         return <CommunityGovernance />;
       case '/animated-series':
         return <AnimatedSeries />;
+      case '/community-animator':
+        return <CommunityAnimator />;
       default:
         return <HomePage />;
     }
   };
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <LoadingTransition isLoading={isLoading}>
-          <Layout>
-            {renderPage()}
-          </Layout>
-        </LoadingTransition>
-      </LanguageProvider>
-    </ThemeProvider>
+    <Web3Provider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <LoadingTransition isLoading={isLoading}>
+            <Layout>
+              {renderPage()}
+            </Layout>
+          </LoadingTransition>
+        </LanguageProvider>
+      </ThemeProvider>
+    </Web3Provider>
   );
 };
 

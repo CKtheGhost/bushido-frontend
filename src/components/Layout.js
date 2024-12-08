@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import NavigationMenu from './NavigationMenu';
-import { Wallet, Twitter, MessageCircle, Send } from 'lucide-react';
+import { Wallet, Twitter, MessageCircle, Send, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useWeb3 } from '../contexts/Web3Context';
 
 const SocialButton = ({ icon: Icon, href, label }) => (
   <a
@@ -77,6 +78,7 @@ const Layout = ({ children }) => {
   const [currentPath, setCurrentPath] = useState('/');
   const { isDark } = useTheme();
   const { t } = useLanguage();
+  const { account, connectWallet, disconnectWallet, isConnecting, userNFTs, votingPower } = useWeb3();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -95,12 +97,16 @@ const Layout = ({ children }) => {
     };
   }, []);
 
-  const handleExploreCollection = () => {
-    window.location.href = '/collection';
-  };
-
   const handleLogoClick = () => {
     window.location.href = '/';
+  };
+
+  const handleWalletClick = () => {
+    if (account) {
+      disconnectWallet();
+    } else {
+      connectWallet();
+    }
   };
 
   return (
@@ -140,15 +146,40 @@ const Layout = ({ children }) => {
           <div className="flex items-center gap-4">
             <NavigationMenu currentPath={currentPath} />
             <button 
-              onClick={handleExploreCollection}
+              onClick={handleWalletClick}
               className={`px-6 py-3 rounded-xl group border flex items-center gap-2 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg ${
                 isDark 
                   ? 'bg-red-700 hover:bg-red-600 border-red-700/50 hover:shadow-red-900' 
                   : 'bg-red-600 hover:bg-red-500 border-red-600/50 hover:shadow-red-500'
               } text-white`}
+              disabled={isConnecting}
             >
-              {t('connectWallet')} 
-              <Wallet className="w-6 h-6" />
+              {isConnecting ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Connecting...
+                </>
+              ) : account ? (
+                <div className="flex items-center gap-2">
+                  <span>{`${account.slice(0, 6)}...${account.slice(-4)}`}</span>
+                  {userNFTs?.length > 0 && (
+                    <span className="px-2 py-1 bg-red-900/20 rounded-full text-sm">
+                      {userNFTs.length} NFTs
+                    </span>
+                  )}
+                  {votingPower > 0 && (
+                    <span className="px-2 py-1 bg-red-900/20 rounded-full text-sm">
+                      {votingPower} votes
+                    </span>
+                  )}
+                  <Wallet className="w-6 h-6" />
+                </div>
+              ) : (
+                <>
+                  {t('connectWallet')}
+                  <Wallet className="w-6 h-6" />
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1,57 +1,235 @@
 import React, { useState } from 'react';
-import Card from './Card'; 
-import { Play, Vote, Calendar, Clock, Users, ChevronRight, ThumbsUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  Play, Vote, Calendar, Clock, Users, ChevronRight, ThumbsUp, 
+  Crown, Heart, Star, AlertCircle, Scroll, GitBranch, ChevronDown 
+} from 'lucide-react';
+import Card from './Card';
+import { useWeb3 } from '../contexts/Web3Context';
+
+// Keep your existing VotingPowerDisplay component exactly as is
+const VotingPowerDisplay = ({ votingPower }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-neutral-900/50 rounded-xl p-6 border border-red-900/20 mb-8"
+  >
+    <div className="flex items-center gap-3 mb-4">
+      <Crown className="w-6 h-6 text-red-500" />
+      <h3 className="text-xl font-bold text-white">Your Voting Power</h3>
+    </div>
+    <div className="grid grid-cols-2 gap-4 text-center">
+      <div className="p-4 bg-neutral-800 rounded-lg">
+        <div className="text-2xl font-bold text-red-500">{votingPower}</div>
+        <div className="text-sm text-gray-400">Available Votes</div>
+      </div>
+      <div className="p-4 bg-neutral-800 rounded-lg">
+        <div className="text-2xl font-bold text-green-500">
+          {votingPower > 0 ? 'Active' : 'Inactive'}
+        </div>
+        <div className="text-sm text-gray-400">Voting Status</div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// New TimelineEvent component for story timeline
+const TimelineEvent = ({ event, isActive, onClick }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`p-6 rounded-xl border transition-all cursor-pointer ${
+      isActive 
+        ? 'bg-red-900/30 border-red-500' 
+        : 'bg-neutral-900/50 border-red-900/20 hover:border-red-500'
+    }`}
+    onClick={() => onClick(event.id)}
+  >
+    <div className="flex justify-between items-start mb-4">
+      <div>
+        <h3 className="text-xl font-bold text-white mb-2">{event.title}</h3>
+        <p className="text-gray-400">{event.description}</p>
+      </div>
+      <span className={`px-3 py-1 rounded-full text-sm ${
+        event.type === 'decision' ? 'bg-blue-900/20 text-blue-500' :
+        event.type === 'episode' ? 'bg-green-900/20 text-green-500' :
+        'bg-yellow-900/20 text-yellow-500'
+      }`}>
+        {event.type}
+      </span>
+    </div>
+    
+    {event.communityChoice && (
+      <div className="mt-4 p-4 bg-neutral-800 rounded-lg">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-red-500">Community Decision</span>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Users className="w-4 h-4" />
+            <span>{event.communityChoice.votes.toLocaleString()} votes</span>
+          </div>
+        </div>
+        <div className="font-bold text-white">{event.communityChoice.choice}</div>
+      </div>
+    )}
+
+    <div className="flex items-center gap-4 mt-4 text-sm text-gray-400">
+      <div className="flex items-center gap-1">
+        <Calendar className="w-4 h-4" />
+        {event.date}
+      </div>
+      {event.branchCount && (
+        <div className="flex items-center gap-1">
+          <GitBranch className="w-4 h-4" />
+          {event.branchCount} branches
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
 
 const AnimatedSeries = () => {
+  // Existing state
+  const { account, votingPower, userNFTs } = useWeb3();
   const [selectedEpisode, setSelectedEpisode] = useState(null);
+  const [userVotes, setUserVotes] = useState({});
+  const [remainingVotes, setRemainingVotes] = useState(votingPower || 0);
 
+  // New timeline state
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [expandedSeason, setExpandedSeason] = useState(1);
+
+  // Keep your existing episodes array exactly as is
   const episodes = [
     {
       id: 1,
-      title: "Through the Veil of Time",
+      title: "Origins of Power",
       thumbnail: "/api/placeholder/640/360",
       status: "Released",
       duration: "24:15",
       votes: 15234,
       airDate: "March 15, 2024",
-      description: "The protagonist activates the artifact and is transported to 16th-century Japan, where he disrupts a battle between samurai and is captured by the Courage Clan."
+      description: "The first warriors discover ancient artifacts that grant them extraordinary abilities. The community will vote on which clan receives the most powerful relic.",
+      votingDeadline: "2 days",
+      communityChoices: [
+        { id: 1, text: "The Dragon Clan", votes: 5234 },
+        { id: 2, text: "The Phoenix Clan", votes: 4891 },
+        { id: 3, text: "The Shadow Clan", votes: 5109 }
+      ]
     },
     {
       id: 2,
-      title: "The Virtue of Loyalty",
+      title: "Path of the Warrior",
       thumbnail: "/api/placeholder/640/360",
       status: "Voting",
       votingEnds: "3 days",
       votes: 8756,
-      description: "The community is currently voting on key plot decisions that will shape the protagonist's journey with the Loyalty Clan."
+      description: "As tensions rise between clans, warriors must choose their allegiances. Your vote will determine the protagonist's journey.",
+      votingDeadline: "3 days",
+      communityChoices: [
+        { id: 1, text: "Join the rebels", votes: 3234 },
+        { id: 2, text: "Remain loyal", votes: 2891 },
+        { id: 3, text: "Form a new alliance", votes: 2631 }
+      ]
     },
     {
       id: 3,
-      title: "Shadows of Betrayal",
+      title: "Honor's Price",
       thumbnail: "/api/placeholder/640/360",
       status: "In Production",
       progress: "65%",
-      description: "Following the community votes, this episode explores the Compassion Clan's village under attack and the protagonist's moral choices."
+      description: "The consequences of the community's previous choices unfold as the chosen clan faces an unprecedented challenge.",
+      estimatedRelease: "April 2024"
     }
   ];
 
+  // Keep your existing upcomingVotes array exactly as is
   const upcomingVotes = [
     {
-      title: "Antagonist's True Identity",
-      endDate: "2 days",
-      votes: 5423
-    },
-    {
-      title: "Clan Alliance Decision",
-      endDate: "5 days",
-      votes: 3876
-    },
-    {
       title: "Next Episode Focus",
-      endDate: "1 week",
-      votes: 6234
+      description: "Choose which storyline to explore in Episode 4",
+      endDate: "5 days",
+      choices: [
+        { id: 1, text: "The Ancient Prophecy", votes: 3423 },
+        { id: 2, text: "The Hidden Village", votes: 2876 },
+        { id: 3, text: "The Forbidden Technique", votes: 3234 }
+      ]
+    },
+    {
+      title: "Character Development",
+      description: "Select a character's crucial decision",
+      endDate: "3 days",
+      choices: [
+        { id: 1, text: "Accept the dark power", votes: 2423 },
+        { id: 2, text: "Seek ancient wisdom", votes: 2876 },
+        { id: 3, text: "Forge a new path", votes: 2534 }
+      ]
     }
   ];
+
+  // New timeline data
+  const timelineData = {
+    1: [
+      {
+        id: 1,
+        title: "The Discovery",
+        type: "episode",
+        date: "Jan 15, 2024",
+        description: "Ancient artifacts are discovered, leading to the awakening of dormant powers.",
+        branchCount: 3
+      },
+      {
+        id: 2,
+        title: "First Guardian",
+        type: "decision",
+        date: "Jan 30, 2024",
+        description: "The community chose which clan would receive the first guardian artifact.",
+        communityChoice: {
+          choice: "The Dragon Clan becomes the first guardian",
+          votes: 15234
+        }
+      },
+      {
+        id: 3,
+        title: "Rising Tensions",
+        type: "episode",
+        date: "Feb 15, 2024",
+        description: "The balance of power shifts as other clans react to the Dragon Clan's newfound strength.",
+        branchCount: 3
+      }
+    ],
+    2: [
+      {
+        id: 4,
+        title: "Alliance Formation",
+        type: "decision",
+        date: "Mar 1, 2024",
+        description: "Community decides on crucial alliances between clans.",
+        communityChoice: {
+          choice: "Phoenix and Shadow clans form an unexpected alliance",
+          votes: 12543
+        }
+      },
+      {
+        id: 5,
+        title: "The Great Trial",
+        type: "upcoming",
+        date: "Mar 15, 2024",
+        description: "A challenge that will test the resolve of all clans approaches.",
+        branchCount: 4
+      }
+    ]
+  };
+
+  // Keep your existing handleVote function exactly as is
+  const handleVote = (episodeId, choiceId) => {
+    if (!account || remainingVotes <= 0) return;
+    
+    setUserVotes(prev => ({
+      ...prev,
+      [episodeId]: choiceId
+    }));
+    setRemainingVotes(prev => prev - 1);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white">
@@ -59,19 +237,31 @@ const AnimatedSeries = () => {
       <section className="relative py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-block p-2 bg-red-900/20 rounded-lg mb-6">
-              <Play className="w-8 h-8 text-red-500" />
-            </div>
-            <h1 className="text-6xl font-bold mb-6">Animated Series</h1>
-            <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
-            <p className="text-xl text-gray-400 leading-relaxed">
-              Watch your NFTs and community decisions come to life in our groundbreaking
-              animated series. Every episode is shaped by holder votes, creating a truly
-              unique collaborative storytelling experience.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-block p-2 bg-red-900/20 rounded-lg mb-6">
+                <Play className="w-8 h-8 text-red-500" />
+              </div>
+              <h1 className="text-6xl font-bold mb-6">Animated Series</h1>
+              <div className="w-24 h-1 bg-red-500 mx-auto mb-8" />
+              <p className="text-xl text-gray-400 leading-relaxed">
+                Join us in creating a groundbreaking animated series where every episode is shaped 
+                by our community. Your NFTs grant you voting power to influence the story's direction.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
+
+      {/* Voting Power Display */}
+      {account && (
+        <div className="container mx-auto px-4">
+          <VotingPowerDisplay votingPower={remainingVotes} />
+        </div>
+      )}
 
       {/* Episodes Grid */}
       <section className="py-16">
@@ -79,10 +269,12 @@ const AnimatedSeries = () => {
           <h2 className="text-4xl font-bold mb-12">Episodes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {episodes.map((episode) => (
-              <Card 
+              <motion.div
                 key={episode.id}
-                className="bg-neutral-900/50 border-red-900/20 overflow-hidden hover:border-red-500 transition-all duration-300 cursor-pointer"
-                onClick={() => setSelectedEpisode(episode)}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="bg-neutral-900/50 rounded-xl overflow-hidden border border-red-900/20 hover:border-red-500 transition-all duration-300"
               >
                 <img 
                   src={episode.thumbnail} 
@@ -101,7 +293,9 @@ const AnimatedSeries = () => {
                     </span>
                   </div>
                   <p className="text-gray-400 mb-4">{episode.description}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                  
+                  {/* Episode Metadata */}
+                  <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
                     {episode.duration && (
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -121,6 +315,101 @@ const AnimatedSeries = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Voting Section */}
+                  {episode.communityChoices && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-red-500">Community Vote</span>
+                        <span className="text-gray-400">Ends in {episode.votingDeadline}</span>
+                      </div>
+
+                      {!account && (
+                        <div className="flex items-center gap-2 text-yellow-500 mb-4">
+                          <AlertCircle className="w-4 h-4" />
+                          <span className="text-sm">Connect wallet to participate in voting</span>
+                        </div>
+                      )}
+
+                      {episode.communityChoices.map((choice) => (
+                        <button
+                          key={choice.id}
+                          onClick={() => handleVote(episode.id, choice.id)}
+                          disabled={!account || remainingVotes <= 0}
+                          className={`w-full p-3 rounded-lg text-left transition-all ${
+  userVotes[episode.id] === choice.id
+    ? 'bg-red-900/30 border border-red-500'
+    : account && remainingVotes > 0
+    ? 'bg-neutral-800 hover:bg-neutral-700 border border-transparent'
+    : 'bg-neutral-800/50 border border-transparent opacity-50 cursor-not-allowed'
+}`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span>{choice.text}</span>
+                              {!account && (
+                                <div className="text-sm text-red-500 mt-1">Connect wallet to vote</div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {account && remainingVotes > 0 && !userVotes[episode.id] && (
+                                <span className="text-sm text-gray-400">
+                                  Cost: 1 vote ({remainingVotes} remaining)
+                                </span>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <Heart className="w-4 h-4" />
+                                <span>{choice.votes.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Upcoming Votes Section */}
+      <section className="py-16 bg-neutral-900/30">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-4xl font-bold">Upcoming Decisions</h2>
+            <button className="text-red-500 flex items-center gap-2 hover:text-red-400 transition-colors">
+              View All <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {upcomingVotes.map((vote, index) => (
+              <Card key={index} className="bg-neutral-900/50 border-red-900/20 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">{vote.title}</h3>
+                    <p className="text-gray-400">{vote.description}</p>
+                  </div>
+                  <Vote className="w-6 h-6 text-red-500" />
+                </div>
+                <div className="space-y-3 mt-6">
+                  {vote.choices.map((choice) => (
+                    <div key={choice.id} className="flex justify-between items-center text-sm text-gray-400">
+                      <span>{choice.text}</span>
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4" />
+                        <span>{choice.votes.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-between items-center text-sm">
+                  <span className="text-gray-400">Voting starts in {vote.endDate}</span>
+                  <div className="flex items-center gap-1 text-red-500">
+                    <Crown className="w-4 h-4" />
+                    <span>{account ? `${remainingVotes} votes available` : 'Connect wallet'}</span>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -128,34 +417,70 @@ const AnimatedSeries = () => {
         </div>
       </section>
 
-      {/* Active Votes Section */}
+      {/* Story Timeline Section */}
       <section className="py-16 bg-neutral-900/30">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-12">
-            <h2 className="text-4xl font-bold">Active Votes</h2>
-            <button className="text-red-500 flex items-center gap-2 hover:text-red-400 transition-colors">
-              View All <ChevronRight className="w-5 h-5" />
-            </button>
+          <div className="text-center mb-16">
+            <div className="inline-block p-2 bg-red-900/20 rounded-lg mb-6">
+              <Scroll className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-4xl font-bold mb-6">Story Timeline</h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Explore the journey shaped by our community. Each decision point represents 
+              a moment where NFT holders influenced the story's direction.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {upcomingVotes.map((vote, index) => (
-              <Card key={index} className="bg-neutral-900/50 border-red-900/20 p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold">{vote.title}</h3>
-                  <Vote className="w-6 h-6 text-red-500" />
-                </div>
-                <div className="flex items-center justify-between text-sm text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    Ends in {vote.endDate}
+
+          <div className="max-w-4xl mx-auto space-y-8">
+            {Object.entries(timelineData).map(([season, events]) => (
+              <div key={season} className="border border-red-900/20 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setExpandedSeason(expandedSeason === Number(season) ? null : Number(season))}
+                  className="w-full p-6 bg-neutral-900/50 flex justify-between items-center hover:bg-neutral-900/70 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Star className="w-6 h-6 text-red-500" />
+                    <h2 className="text-2xl font-bold">Season {season}</h2>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <ThumbsUp className="w-4 h-4" />
-                    {vote.votes.toLocaleString()} votes
+                  <ChevronDown
+                    className={`w-6 h-6 transition-transform ${
+                      expandedSeason === Number(season) ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSeason === Number(season) && (
+                  <div className="p-6 space-y-6">
+                    {events.map((event) => (
+                      <TimelineEvent
+                        key={event.id}
+                        event={event}
+                        isActive={selectedEvent === event.id}
+                        onClick={setSelectedEvent}
+                      />
+                    ))}
                   </div>
-                </div>
-              </Card>
+                )}
+              </div>
             ))}
+          </div>
+
+          {/* Timeline Legend */}
+          <div className="max-w-4xl mx-auto mt-8 p-6 bg-neutral-900/50 rounded-xl">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="text-sm text-gray-400">Episode Released</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <span className="text-sm text-gray-400">Community Decision</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <span className="text-sm text-gray-400">Upcoming Event</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
