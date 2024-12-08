@@ -3,45 +3,18 @@ import { Canvas } from '@react-three/fiber';
 import { 
   OrbitControls,
   useGLTF, 
-  Environment, 
-  ContactShadows,
   PerspectiveCamera
 } from '@react-three/drei';
 import { Camera, Upload, AlertCircle, RotateCw, Play, Pause, RefreshCw } from 'lucide-react';
 import * as THREE from 'three';
 import { presetModels, animations } from './ModelAnimatorConfig';
 import AnimatedModel from './AnimatedModel';
+import SceneEnvironment from '../assets/scene/SceneEnvironment';
 
 // Preload models
 presetModels.forEach(model => {
   useGLTF.preload(model.path);
 });
-
-// Scene Component
-const Scene = ({ children }) => (
-  <>
-    <Environment preset="sunset" background blur={0.8} />
-    <ambientLight intensity={0.5} />
-    <directionalLight
-      castShadow
-      position={[2.5, 8, 5]}
-      intensity={1.5}
-      shadow-mapSize={[1024, 1024]}
-    >
-      <orthographicCamera attach="shadow-camera" args={[-10, 10, -10, 10, 0.1, 50]} />
-    </directionalLight>
-    <ContactShadows
-      opacity={0.4}
-      scale={10}
-      blur={2}
-      far={4}
-      resolution={256}
-      color="#000000"
-    />
-    <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={45} />
-    {children}
-  </>
-);
 
 // Main ModelAnimator Component
 const ModelAnimator = () => {
@@ -138,7 +111,7 @@ const ModelAnimator = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Panel */}
+          {/* Left Panel - Controls (unchanged) */}
           <div className="space-y-6">
             {/* Preset Models */}
             <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20">
@@ -218,7 +191,8 @@ const ModelAnimator = () => {
             <div className="bg-gray-900/50 rounded-xl p-6 border border-red-900/20 h-[600px] relative">
               <Canvas shadows gl={{ preserveDrawingBuffer: true }}>
                 <Suspense fallback={null}>
-                  <Scene>
+                  <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={45} />
+                  <SceneEnvironment>
                     {(customModel || selectedModel?.path) && (
                       <AnimatedModel 
                         modelPath={customModel || selectedModel.path}
@@ -229,11 +203,13 @@ const ModelAnimator = () => {
                         key={`${selectedModel?.path}-${selectedAnimation?.path}`}
                       />
                     )}
-                  </Scene>
+                  </SceneEnvironment>
                   <OrbitControls
                     makeDefault
-                    minPolarAngle={0}
-                    maxPolarAngle={Math.PI / 2}
+                    minPolarAngle={Math.PI / 4}
+                    maxPolarAngle={Math.PI / 2.5}
+                    minDistance={3}
+                    maxDistance={10}
                     target={[0, 0, 0]}
                     rotation={[0, cameraRotation, 0]}
                   />

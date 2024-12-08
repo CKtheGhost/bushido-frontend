@@ -1,94 +1,85 @@
-import React, { useEffect, useRef } from 'react';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import React, { Suspense, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import SceneEnvironment from '../assets/scene/SceneEnvironment';
+import AnimatedModel from './AnimatedModel';
+import { RotateCw } from 'lucide-react';
 import * as THREE from 'three';
+import { environmentSettings, cameraSettings } from '../assets/ModelAnimatorConfig';
 
-const ModelLoader = ({ 
+const LoadingScreen = () => (
+  <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="text-center">
+      <RotateCw className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
+      <p className="text-white text-lg">Loading scene...</p>
+    </div>
+  </div>
+);
+
+const ModelViewer = ({ 
   modelPath, 
-  traits = {}, 
-  animation = 'idle',
-  scale = 1,
-  position = [0, 0, 0]
+  animationPath,
+  isPlaying = true,
+  speed = 1,
+  loop = true,
+  scale = 2,
+  position = [0, -1, 0]
 }) => {
-  const group = useRef();
-  const { scene, animations } = useGLTF(modelPath);
-  const { actions, mixer } = useAnimations(animations, group);
-  
-  // Handle model loading
-  useEffect(() => {
-    // Clone the scene to avoid mutations
-    const modelScene = scene.clone();
-    
-    // Apply materials and textures
-    modelScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        
-        // Apply PBR materials
-        child.material = new THREE.MeshPhysicalMaterial({
-          map: child.material.map,
-          normalMap: child.material.normalMap,
-          roughnessMap: child.material.roughnessMap,
-          metalnessMap: child.material.metalnessMap,
-          envMapIntensity: 1,
-          roughness: 0.5,
-          metalness: 0.5,
-        });
-      }
-    });
+  const [isLoading, setIsLoading] = useState(true);
 
-    // Clear previous model
-    while (group.current.children.length) {
-      group.current.remove(group.current.children[0]);
-    }
-
-    // Add new model
-    group.current.add(modelScene);
-  }, [scene, modelPath]);
-
-  // Handle traits
-  useEffect(() => {
-    Object.entries(traits).forEach(async ([category, trait]) => {
-      if (trait) {
-        const { scene: traitScene } = await useGLTF.load(trait.path);
-        const traitMesh = traitScene.clone();
-        
-        // Position the trait based on category
-        switch (category) {
-          case 'armor':
-            traitMesh.position.set(0, 0, 0);
-            break;
-          case 'weapon':
-            traitMesh.position.set(0.5, 0, 0);
-            break;
-          case 'mask':
-            traitMesh.position.set(0, 1.6, 0);
-            break;
-          default:
-            break;
-        }
-        
-        group.current.add(traitMesh);
-      }
-    });
-  }, [traits]);
-
-  // Handle animations
-  useEffect(() => {
-    // Reset and stop all animations
-    Object.values(actions).forEach(action => action.stop());
-    
-    // Play selected animation
-    if (actions[animation]) {
-      actions[animation].reset().play();
-    }
-  }, [actions, animation]);
+  const handleCreated = ({ gl }) => {
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.2;
+    gl.antialias = true;
+    setIsLoading(false);
+  };
 
   return (
-    <group 
-      ref={group} 
-      position={position}
-      scale={[scale, scale, scale]}
-    />
+    <div className="relative w-full h-[600px] bg-black rounded-lg overflow-hidden">
+      {isLoading && <LoadingScreen />}
+      
+      <Canvas
+        shadows
+        onCreated={handleCreated}
+        camera={{
+          position: cameraSettings.default.position,
+          fov: cameraSettings.default.fov,
+          near: cameraSettings.default.near,
+          far: cameraSettings.default.far
+        }}
+      >
+        <Suspense fallback={null}>
+          <SceneEnvironment>
+            <AnimatedModel
+              modelPath={modelPath}
+              animationPath={animationPath}
+              isPlaying={isPlaying}
+              speed={speed}
+              loop={loop}
+              scale={scale}
+              position={position}
+            />
+          </SceneEnvironment>
+
+          <OrbitControls
+            makeDefault
+            minPolarAngle={Math.PI / 4}
+            maxPolarAngle={Math.PI / 2}
+            minDistance={3}
+            maxDistance={10}
+            enablePan={false}
+            enableDamping
+            dampingFactor={0.05}
+            rotateSpeed={0.5}
+          />
+        </Suspense>
+      </Canvas>
+
+      <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+        Click and drag to rotate • Scroll to zoom
+      </div>
+    </div>
   );
 };
+
+export default ModelViewer;

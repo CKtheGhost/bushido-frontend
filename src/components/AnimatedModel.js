@@ -18,13 +18,13 @@ const AnimatedModel = ({
   const [currentAction, setCurrentAction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Load animation data only if animationPath is provided
-  const animationData = animationPath ? useGLTF(animationPath) : null;
+  
+  // Move useGLTF call outside of conditional
+  const animationData = useGLTF(animationPath || modelPath);
 
   // Handle animation setup
   useEffect(() => {
-    if (!animationPath || !animationData) return;
+    if (!animationPath) return;
 
     try {
       setIsLoading(true);
