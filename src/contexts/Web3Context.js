@@ -133,6 +133,13 @@ export const Web3Provider = ({ children }) => {
     };
   }, []);
 
+  // Additional voting-related methods
+  const recordVote = (voteDetails) => {
+    // Implement vote tracking logic
+    setLastVoteTimestamp(Date.now());
+    // You might want to add more sophisticated vote tracking here
+  };
+
   return (
     <Web3Context.Provider value={{
       web3,
@@ -141,8 +148,10 @@ export const Web3Provider = ({ children }) => {
       votingPower,
       isConnecting,
       error,
+      lastVoteTimestamp,
       connectWallet,
-      disconnectWallet
+      disconnectWallet,
+      recordVote
     }}>
       {children}
     </Web3Context.Provider>

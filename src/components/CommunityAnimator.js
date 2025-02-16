@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { 
   Play, Vote, Crown, Heart, Users, Clock, 
-  AlertCircle, Sword, Shield, Flame, Scroll,
-  Eye, Book, Wind, Sparkles, MessageCircle,
-  Star, Activity, BarChart, Award
+  AlertCircle, Sword, Scroll, Eye, Book, Wind, 
+  Sparkles, MessageCircle, Star, Activity, BarChart, 
+  Award 
 } from 'lucide-react';
 
 // Animation variants
@@ -24,10 +24,6 @@ const scaleIn = {
   initial: { opacity: 0, scale: 0.8 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 0.8 }
-};
-
-const staggeredChildren = {
-  animate: { transition: { staggerChildren: 0.1 } }
 };
 
 // Scene types with their icons
@@ -60,7 +56,231 @@ const calculateVotingPower = (nftCount, experience) => {
   return baseVotingPower + bonusPower;
 };
 
-// VotingPowerDisplay Component
+// Component Definitions
+const EnhancedScenePreview = ({ selectedScene, onVoteStart }) => {
+  const controls = useAnimation();
+  
+  const handleInteraction = async () => {
+    await controls.start({
+      scale: [1, 1.05, 1],
+      transition: { duration: 0.5 }
+    });
+    onVoteStart();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-neutral-900/50 rounded-xl border border-red-900/20 h-[600px] relative overflow-hidden"
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedScene?.id || 'empty'}
+          variants={scaleIn}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="w-full h-full"
+        >
+          <motion.img 
+            src={`/api/placeholder/800/600`} 
+            alt={selectedScene?.title || 'Scene preview'} 
+            className="w-full h-full object-cover cursor-pointer"
+            animate={controls}
+            whileHover={{ scale: 1.02 }}
+            onClick={handleInteraction}
+          />
+          
+          {selectedScene && (
+            <motion.div
+              variants={fadeInUp}
+              className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black to-transparent"
+            >
+              <h3 className="text-2xl font-bold text-white mb-2">
+                {selectedScene.title}
+              </h3>
+              <p className="text-gray-300">{selectedScene.description}</p>
+            </motion.div>
+          )}
+          
+          {!selectedScene && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <p className="text-white text-xl">Select a scene to begin</p>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+const EnhancedVotingOption = ({ 
+  option, 
+  onVote, 
+  hasVoted, 
+  remainingVotes, 
+  userVotes, 
+  showResult 
+}) => {
+  const controls = useAnimation();
+  const OptionTypeIcon = SCENE_TYPES[option.type]?.icon;
+  const totalVotes = option.votes;
+  const votePercentage = Math.round((option.votes / (option.totalVotes || 1)) * 100);
+
+  const handleVoteClick = async () => {
+    if (hasVoted || remainingVotes <= 0) return;
+    
+    await controls.start({
+      scale: [1, 1.1, 1],
+      transition: { duration: 0.3 }
+    });
+    onVote(option.id);
+  };
+
+  return (
+    <motion.button
+      onClick={handleVoteClick}
+      animate={controls}
+      disabled={hasVoted || remainingVotes <= 0}
+      variants={fadeInUp}
+      whileHover={!hasVoted && remainingVotes > 0 ? { scale: 1.02 } : {}}
+      className={`w-full p-4 rounded-lg text-left transition-all relative overflow-hidden ${
+        hasVoted && userVotes[option.id]
+          ? 'bg-red-900/30 border border-red-500'
+          : hasVoted
+            ? 'bg-neutral-800/50 opacity-50'
+            : remainingVotes > 0
+              ? 'bg-neutral-800 hover:bg-neutral-700'
+              : 'bg-neutral-800/50 opacity-50 cursor-not-allowed'
+      }`}
+    >
+      {showResult && (
+        <motion.div 
+          className="absolute left-0 top-0 h-full bg-red-500/10"
+          initial={{ width: 0 }}
+          animate={{ width: `${votePercentage}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        />
+      )}
+
+      <div className="relative z-10 flex justify-between items-center">
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            {OptionTypeIcon && <OptionTypeIcon className="w-5 h-5 text-red-500" />}
+            <span className="text-white">{option.text}</span>
+          </div>
+          {option.description && (
+            <p className="text-sm text-gray-400 mt-1 ml-9">{option.description}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {!hasVoted && remainingVotes > 0 && (
+            <span className="text-sm text-gray-400">
+              Cost: {option.voteCost} votes
+            </span>
+          )}
+          <div className="flex items-center gap-2 text-gray-400">
+            <Heart className="w-4 h-4" />
+            <span>
+              {showResult 
+                ? `${votePercentage}% (${totalVotes.toLocaleString()})` 
+                : totalVotes.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {showResult && votePercentage > 50 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="absolute top-2 right-2"
+        >
+          <Star className="w-5 h-5 text-yellow-500" />
+        </motion.div>
+      )}
+    </motion.button>
+  );
+};
+
+const AchievementProgress = ({ achievements, completedIds }) => (
+  <motion.div 
+    variants={fadeInUp}
+    initial="initial"
+    animate="animate"
+    className="bg-neutral-900/50 rounded-xl p-6 border border-red-900/20"
+  >
+    <div className="flex items-center gap-3 mb-6">
+      <Award className="w-6 h-6 text-red-500" />
+      <h3 className="text-xl font-bold text-white">Achievements</h3>
+    </div>
+    <div className="space-y-4">
+      {achievements.map((achievement) => {
+        const Icon = achievement.icon;
+        const isCompleted = completedIds.includes(achievement.id);
+        
+        return (
+          <motion.div
+            key={achievement.id}
+            variants={slideIn}
+            className={`p-4 rounded-lg border ${
+              isCompleted 
+                ? 'bg-red-900/20 border-red-500'
+                : 'bg-neutral-800 border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Icon className={`w-5 h-5 ${
+                isCompleted ? 'text-red-500' : 'text-gray-500'
+              }`} />
+              <div className="flex-1">
+                <h4 className="text-white font-bold">{achievement.title}</h4>
+                <p className="text-sm text-gray-400">{achievement.description}</p>
+              </div>
+              <div className="text-right">
+                <span className={`text-sm ${
+                  isCompleted ? 'text-red-500' : 'text-gray-500'
+                }`}>
+                  {achievement.xp} XP
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  </motion.div>
+);
+
+const CommunityStats = ({ stats }) => (
+  <motion.div
+    variants={fadeInUp}
+    initial="initial"
+    animate="animate"
+    className="bg-neutral-900/50 rounded-xl p-6 border border-red-900/20"
+  >
+    <div className="flex items-center gap-3 mb-6">
+      <BarChart className="w-6 h-6 text-red-500" />
+      <h3 className="text-xl font-bold text-white">Community Impact</h3>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      {Object.entries(stats).map(([key, value], index) => (
+        <motion.div
+          key={key}
+          variants={scaleIn}
+          className="p-4 bg-neutral-800 rounded-lg"
+        >
+          <div className="text-sm text-gray-400 mb-1">{key}</div>
+          <div className="text-2xl font-bold text-red-500">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+);
+
 const VotingPowerDisplay = ({ nftCount, votingPower }) => (
   <motion.div 
     variants={fadeInUp}
@@ -109,7 +329,6 @@ const VotingPowerDisplay = ({ nftCount, votingPower }) => (
   </motion.div>
 );
 
-// StoryScene Component
 const StoryScene = ({ scene, isSelected, onSelect, votingPower }) => {
   const SceneIcon = SCENE_TYPES[scene.type]?.icon || Scroll;
   
@@ -164,7 +383,6 @@ const StoryScene = ({ scene, isSelected, onSelect, votingPower }) => {
 
 // Main CommunityAnimator Component
 const CommunityAnimator = () => {
-  // State management
   const [selectedScene, setSelectedScene] = useState(null);
   const [userVotes, setUserVotes] = useState({});
   const [nftCount, setNftCount] = useState(0);
@@ -312,6 +530,7 @@ const CommunityAnimator = () => {
           </div>
         </motion.div>
 
+        {/* Main Content */}
         <AnimatePresence mode="wait">
           {activeTab === 'scenes' ? (
             <motion.div
@@ -349,7 +568,7 @@ const CommunityAnimator = () => {
                   </AnimatePresence>
                 </div>
 
-                {/* Level Progress */}
+                {/* XP Level Progress */}
                 <motion.div
                   variants={fadeInUp}
                   className="bg-neutral-900/50 rounded-xl p-6 border border-red-900/20"

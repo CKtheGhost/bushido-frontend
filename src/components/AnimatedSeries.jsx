@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Play, Vote, Calendar, Clock, Users, ChevronRight, Crown, 
@@ -7,7 +7,7 @@ import {
 import Card from './Card';
 import { useWeb3 } from '../contexts/Web3Context';
 
-// Updated FallingPetals component using a real cherry blossom petal image
+// Visual Components
 const FallingPetals = () => {
   const petals = Array.from({ length: 20 });
   return (
@@ -16,7 +16,7 @@ const FallingPetals = () => {
         const left = Math.random() * 100;
         const delay = Math.random() * 5;
         const duration = 10 + Math.random() * 5;
-        const size = 20 + Math.random() * 20; // Random size between 20px and 40px
+        const size = 20 + Math.random() * 20;
         return (
           <motion.img 
             key={index}
@@ -38,7 +38,6 @@ const FallingPetals = () => {
   );
 };
 
-// IntenseSamuraiOverlay: a pulsating samurai crest overlay at bottom right
 const IntenseSamuraiOverlay = () => (
   <motion.img
     src="/images/samurai-crest.png"
@@ -50,7 +49,6 @@ const IntenseSamuraiOverlay = () => (
   />
 );
 
-// VotingPowerDisplay component with refined styling
 const VotingPowerDisplay = ({ votingPower }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -76,7 +74,6 @@ const VotingPowerDisplay = ({ votingPower }) => (
   </motion.div>
 );
 
-// TimelineEvent component with subtle hover scaling
 const TimelineEvent = ({ event, isActive, onClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -131,18 +128,130 @@ const TimelineEvent = ({ event, isActive, onClick }) => (
   </motion.div>
 );
 
+const EpisodeCard = ({ episode, account, remainingVotes, userVotes, onVote }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="bg-neutral-900/50 rounded-xl overflow-hidden border border-red-900/20 hover:border-red-500 transition-all duration-300 shadow-lg transform hover:scale-105"
+  >
+    <img 
+      src={episode.thumbnail} 
+      alt={episode.title}
+      className="w-full h-48 object-cover"
+    />
+    <div className="p-6">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-2xl font-bold">{episode.title}</h3>
+        <span className={`px-3 py-1 rounded-full text-sm ${
+          episode.status === 'Released' ? 'bg-green-900/20 text-green-500' :
+          episode.status === 'Voting' ? 'bg-blue-900/20 text-blue-500' :
+          'bg-yellow-900/20 text-yellow-500'
+        }`}>
+          {episode.status}
+        </span>
+      </div>
+      <p className="text-gray-400 mb-4">{episode.description}</p>
+      
+      {/* Metadata */}
+      <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
+        {episode.duration && (
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {episode.duration}
+          </div>
+        )}
+        {episode.votes && (
+          <div className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            {episode.votes.toLocaleString()} votes
+          </div>
+        )}
+        {episode.votingEnds && (
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {episode.votingEnds} left
+          </div>
+        )}
+      </div>
+
+      {/* Voting Section */}
+      {episode.communityChoices && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-red-500">Community Vote</span>
+            <span className="text-gray-400">Ends in {episode.votingDeadline}</span>
+          </div>
+
+          {!account && (
+            <div className="flex items-center gap-2 text-yellow-500 mb-4">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm">Connect wallet to participate in voting</span>
+            </div>
+          )}
+
+          {episode.communityChoices.map((choice) => (
+            <button
+              key={choice.id}
+              onClick={() => onVote(episode.id, choice.id)}
+              disabled={!account || remainingVotes <= 0}
+              className={`w-full p-3 rounded-lg text-left transition-all ${
+                userVotes[episode.id] === choice.id
+                  ? 'bg-red-900/30 border border-red-500'
+                  : account && remainingVotes > 0
+                  ? 'bg-neutral-800 hover:bg-neutral-700 border border-transparent'
+                  : 'bg-neutral-800/50 border border-transparent opacity-50 cursor-not-allowed'
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <span>{choice.text}</span>
+                  {!account && (
+                    <div className="text-sm text-red-500 mt-1">Connect wallet to vote</div>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  {account && remainingVotes > 0 && !userVotes[episode.id] && (
+                    <span className="text-sm text-gray-400">
+                      Cost: 1 vote ({remainingVotes} remaining)
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    <span>{choice.votes.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
+// Main Component
 const AnimatedSeries = () => {
-  // Web3 and state variables
-  const { account, votingPower, userNFTs } = useWeb3();
+  // State management 
+  const { 
+    account, 
+    votingPower, 
+    userNFTs, 
+    connectWallet,
+    disconnectWallet 
+  } = useWeb3();
   const [selectedEpisode, setSelectedEpisode] = useState(null);
   const [userVotes, setUserVotes] = useState({});
   const [remainingVotes, setRemainingVotes] = useState(votingPower || 0);
-
-  // Timeline state
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [expandedSeason, setExpandedSeason] = useState(1);
 
-  // Episodes array remains unchanged
+  // Ensure voting power updates when changed
+  useEffect(() => {
+    setRemainingVotes(votingPower || 0);
+  }, [votingPower]);
+
+  // Episode data
   const episodes = [
     {
       id: 1,
@@ -186,7 +295,7 @@ const AnimatedSeries = () => {
     }
   ];
 
-  // Upcoming votes array remains unchanged
+  // Upcoming votes
   const upcomingVotes = [
     {
       title: "Next Episode Focus",
@@ -210,7 +319,7 @@ const AnimatedSeries = () => {
     }
   ];
 
-  // Timeline data remains unchanged
+  // Timeline data
   const timelineData = {
     1: [
       {
@@ -264,7 +373,7 @@ const AnimatedSeries = () => {
     ]
   };
 
-  // handleVote function remains unchanged
+  // Remaining component logic and return method stay the same
   const handleVote = (episodeId, choiceId) => {
     if (!account || remainingVotes <= 0) return;
     
@@ -277,15 +386,12 @@ const AnimatedSeries = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black text-white overflow-hidden">
-      {/* Cinematic Hero Section */}
+      {/* Hero Section */}
       <section className="relative h-screen" id="hero">
-        {/* Full-screen background video */}
         <video autoPlay loop muted className="absolute inset-0 object-cover w-full h-full">
           <source src="/videos/animatedSeriesHeader.mp4" type="video/mp4" />
-          {/* Replace with your cinematic samurai background video */}
         </video>
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black opacity-60"></div>
+        <div className="absolute inset-0 bg-black opacity-60" />
         <div className="container mx-auto px-4 relative z-10 flex items-center justify-center h-full">
           <motion.div
             initial={{ opacity: 0, y: 20, rotate: -2 }}
@@ -305,7 +411,6 @@ const AnimatedSeries = () => {
             </p>
           </motion.div>
         </div>
-        {/* Falling sakura petals overlay */}
         <FallingPetals />
       </section>
 
@@ -322,106 +427,14 @@ const AnimatedSeries = () => {
           <h2 className="text-4xl font-bold mb-12">Episodes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {episodes.map((episode) => (
-              <motion.div
+              <EpisodeCard 
                 key={episode.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="bg-neutral-900/50 rounded-xl overflow-hidden border border-red-900/20 hover:border-red-500 transition-all duration-300 shadow-lg transform hover:scale-105"
-              >
-                <img 
-                  src={episode.thumbnail} 
-                  alt={episode.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-2xl font-bold">{episode.title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      episode.status === 'Released' ? 'bg-green-900/20 text-green-500' :
-                      episode.status === 'Voting' ? 'bg-blue-900/20 text-blue-500' :
-                      'bg-yellow-900/20 text-yellow-500'
-                    }`}>
-                      {episode.status}
-                    </span>
-                  </div>
-                  <p className="text-gray-400 mb-4">{episode.description}</p>
-                  
-                  {/* Episode Metadata */}
-                  <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                    {episode.duration && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {episode.duration}
-                      </div>
-                    )}
-                    {episode.votes && (
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {episode.votes.toLocaleString()} votes
-                      </div>
-                    )}
-                    {episode.votingEnds && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {episode.votingEnds} left
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Voting Section */}
-                  {episode.communityChoices && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-red-500">Community Vote</span>
-                        <span className="text-gray-400">Ends in {episode.votingDeadline}</span>
-                      </div>
-
-                      {!account && (
-                        <div className="flex items-center gap-2 text-yellow-500 mb-4">
-                          <AlertCircle className="w-4 h-4" />
-                          <span className="text-sm">Connect wallet to participate in voting</span>
-                        </div>
-                      )}
-
-                      {episode.communityChoices.map((choice) => (
-                        <button
-                          key={choice.id}
-                          onClick={() => handleVote(episode.id, choice.id)}
-                          disabled={!account || remainingVotes <= 0}
-                          className={`w-full p-3 rounded-lg text-left transition-all ${
-                            userVotes[episode.id] === choice.id
-                              ? 'bg-red-900/30 border border-red-500'
-                              : account && remainingVotes > 0
-                              ? 'bg-neutral-800 hover:bg-neutral-700 border border-transparent'
-                              : 'bg-neutral-800/50 border border-transparent opacity-50 cursor-not-allowed'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span>{choice.text}</span>
-                              {!account && (
-                                <div className="text-sm text-red-500 mt-1">Connect wallet to vote</div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4">
-                              {account && remainingVotes > 0 && !userVotes[episode.id] && (
-                                <span className="text-sm text-gray-400">
-                                  Cost: 1 vote ({remainingVotes} remaining)
-                                </span>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <Heart className="w-4 h-4" />
-                                <span>{choice.votes.toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+                episode={episode}
+                account={account}
+                remainingVotes={remainingVotes}
+                userVotes={userVotes}
+                onVote={handleVote}
+              />
             ))}
           </div>
         </div>
@@ -545,4 +558,3 @@ const AnimatedSeries = () => {
 };
 
 export default AnimatedSeries;
-
