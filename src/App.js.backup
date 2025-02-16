@@ -1,0 +1,56 @@
+import React from 'react';
+import Layout from './components/Layout';
+import HomePage from './components/HomePage';
+import CollectionGrid from './components/CollectionGrid';
+import ModelAnimator from './components/ModelAnimator';
+import SamuraiLegacy from './components/SamuraiLegacy';
+import CommunityGovernance from './components/CommunityGovernance';
+import AnimatedSeries from './components/AnimatedSeries';
+
+const App = () => {
+  const [currentPage, setCurrentPage] = React.useState('/');
+
+  React.useEffect(() => {
+    // Listen to path changes
+    const handleLocation = () => {
+      setCurrentPage(window.location.pathname);
+    };
+    
+    window.addEventListener('popstate', handleLocation);
+    
+    // Handle initial page load
+    handleLocation();
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('popstate', handleLocation);
+    };
+  }, []);
+
+  // Route-based page rendering
+  const renderPage = () => {
+    switch (currentPage) {
+      case '/collection':
+        return <CollectionGrid />;
+      case '/animator':
+        return <ModelAnimator />;
+      case '/samurai-legacy':
+        return <SamuraiLegacy />;
+      case '/community':
+        return <CommunityGovernance />;
+      case '/animated-series':
+        return <AnimatedSeries />;
+      default:
+        return <HomePage />;
+    }
+  };
+
+  // Wrap the rendered page with Layout component
+  return (
+    <Layout>
+      {renderPage()}
+    </Layout>
+  );
+};
+
+export default App;

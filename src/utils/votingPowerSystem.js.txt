@@ -1,0 +1,175 @@
+// votingPowerSystem.js
+import { useWeb3 } from '../contexts/Web3Context';
+
+// NFT Rarity Tiers and their base voting power
+const RARITY_VOTING_POWER = {
+  LEGENDARY: 8,
+  MYTHIC: 6,
+  RARE: 4,
+  UNCOMMON: 2,
+  COMMON: 1
+};
+
+// Bonus multipliers for holding multiple NFTs
+const HOLDING_MULTIPLIERS = {
+  1: 1,    // Base multiplier
+  3: 1.2,  // 20% bonus for holding 3+ NFTs
+  5: 1.5,  // 50% bonus for holding 5+ NFTs
+  10: 2,   // 100% bonus for holding 10+ NFTs
+  20: 2.5  // 150% bonus for holding 20+ NFTs
+};
+
+// Clan alignment bonuses
+const CLAN_BONUSES = {
+  DRAGON: 2,   // Dragon clan gets +2 voting power
+  PHOENIX: 2,  // Phoenix clan gets +2 voting power
+  SHADOW: 2,   // Shadow clan gets +2 voting power
+  STORM: 1.5,  // Storm clan gets +1.5 voting power
+  FLAME: 1.5   // Flame clan gets +1.5 voting power
+};
+
+// Element type bonuses for story-specific voting
+const ELEMENT_BONUSES = {
+  FIRE: { fireScenes: 2 },
+  WATER: { waterScenes: 2 },
+  EARTH: { earthScenes: 2 },
+  WIND: { windScenes: 2 },
+  VOID: { voidScenes: 2 }
+};
+
+// Time-based voting power decay to encourage active participation
+const calculateTimeMultiplier = (lastVoteTimestamp) => {
+  if (!lastVoteTimestamp) return 1;
+  
+  const daysSinceLastVote = (Date.now() - lastVoteTimestamp) / (1000 * 60 * 60 * 24);
+  if (daysSinceLastVote <= 7) return 1;          // Full power for first week
+  if (daysSinceLastVote <= 14) return 0.8;       // 80% power after 1 week
+  if (daysSinceLastVote <= 30) return 0.6;       // 60% power after 2 weeks
+  return 0.4;                                     // 40% power after 30 days
+};
+
+// Calculate holding bonus based on total NFTs owned
+const calculateHoldingMultiplier = (nftCount) => {
+  const thresholds = Object.keys(HOLDING_MULTIPLIERS)
+    .map(Number)
+    .sort((a, b) => b - a);
+  
+  for (const threshold of thresholds) {
+    if (nftCount >= threshold) {
+      return HOLDING_MULTIPLIERS[threshold];
+    }
+  }
+  return 1;
+};
+
+// Calculate clan-specific bonuses
+const calculateClanBonus = (nfts) => {
+  const clanCounts = nfts.reduce((acc, nft) => {
+    const clan = nft.traits.find(t => t.type === 'Clan')?.value.toUpperCase();
+    if (clan && CLAN_BONUSES[clan]) {
+      acc[clan] = (acc[clan] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  // Get the highest clan bonus based on majority holdings
+  const dominantClan = Object.entries(clanCounts)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  return dominantClan ? CLAN_BONUSES[dominantClan[0]] : 1;
+};
+
+// Calculate element-specific bonuses for particular story scenes
+const calculateElementBonus = (nfts, sceneType) => {
+  const elementCounts = nfts.reduce((acc, nft) => {
+    const element = nft.traits.find(t => t.type === 'Element')?.value.toUpperCase();
+    if (element && ELEMENT_BONUSES[element]?.[sceneType]) {
+      acc[element] = (acc[element] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  // Get the highest element bonus for the scene type
+  const dominantElement = Object.entries(elementCounts)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  return dominantElement ? ELEMENT_BONUSES[dominantElement[0]][sceneType] : 1;
+};
+
+// Main voting power calculation function
+export const calculateVotingPower = (nfts, lastVoteTimestamp, sceneType = null) => {
+  if (!nfts?.length) return 0;
+
+  // Calculate base voting power from NFT rarities
+  const baseVotingPower = nfts.reduce((total, nft) => {
+    const rarity = nft.traits.find(t => t.type === 'Rarity')?.value.toUpperCase();
+    return total + (RARITY_VOTING_POWER[rarity] || RARITY_VOTING_POWER.COMMON);
+  }, 0);
+
+  // Apply multipliers
+  const holdingMultiplier = calculateHoldingMultiplier(nfts.length);
+  const clanBonus = calculateClanBonus(nfts);
+  const elementBonus = sceneType ? calculateElementBonus(nfts, sceneType) : 1;
+  const timeMultiplier = calculateTimeMultiplier(lastVoteTimestamp);
+
+  // Calculate final voting power
+  const totalVotingPower = Math.floor(
+    baseVotingPower * 
+    holdingMultiplier * 
+    clanBonus * 
+    elementBonus * 
+    timeMultiplier
+  );
+
+  return totalVotingPower;
+};
+
+// Hook for easy voting power calculation
+export const useVotingPower = (sceneType = null) => {
+  const { userNFTs, lastVoteTimestamp } = useWeb3();
+  
+  return calculateVotingPower(userNFTs, lastVoteTimestamp, sceneType);
+};
+
+// Utility to get detailed voting power breakdown
+export const getVotingPowerBreakdown = (nfts, lastVoteTimestamp, sceneType = null) => {
+  if (!nfts?.length) return null;
+
+  const baseVotingPower = nfts.reduce((total, nft) => {
+    const rarity = nft.traits.find(t => t.type === 'Rarity')?.value.toUpperCase();
+    return total + (RARITY_VOTING_POWER[rarity] || RARITY_VOTING_POWER.COMMON);
+  }, 0);
+
+  const holdingMultiplier = calculateHoldingMultiplier(nfts.length);
+  const clanBonus = calculateClanBonus(nfts);
+  const elementBonus = sceneType ? calculateElementBonus(nfts, sceneType) : 1;
+  const timeMultiplier = calculateTimeMultiplier(lastVoteTimestamp);
+
+  return {
+    baseVotingPower,
+    holdingMultiplier,
+    clanBonus,
+    elementBonus,
+    timeMultiplier,
+    totalVotingPower: Math.floor(
+      baseVotingPower * 
+      holdingMultiplier * 
+      clanBonus * 
+      elementBonus * 
+      timeMultiplier
+    ),
+    breakdown: {
+      nftCount: nfts.length,
+      rarityDistribution: nfts.reduce((acc, nft) => {
+        const rarity = nft.traits.find(t => t.type === 'Rarity')?.value.toUpperCase();
+        acc[rarity] = (acc[rarity] || 0) + 1;
+        return acc;
+      }, {}),
+      dominantClan: Object.entries(nfts.reduce((acc, nft) => {
+        const clan = nft.traits.find(t => t.type === 'Clan')?.value.toUpperCase();
+        if (clan) acc[clan] = (acc[clan] || 0) + 1;
+        return acc;
+      }, {})).sort(([,a], [,b]) => b - a)[0]?.[0]
+    }
+  };
+};
